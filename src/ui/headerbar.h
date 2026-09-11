@@ -2,13 +2,12 @@
 
 #include <QWidget>
 
-class HeaderBar : public QWidget
-{
+class HeaderBar : public QWidget {
     Q_OBJECT
 
-public:
-    explicit HeaderBar(QWidget* parent = nullptr);
+  public:
+    explicit HeaderBar(QWidget *parent = nullptr);
 
-signals:
+  signals:
     void openFolderRequested();
 };

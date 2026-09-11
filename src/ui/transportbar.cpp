@@ -8,14 +8,12 @@
 #include <QSlider>
 #include <QToolButton>
 
-TransportBar::TransportBar(QWidget* parent)
-    : QWidget(parent)
-{
+TransportBar::TransportBar(QWidget *parent) : QWidget(parent) {
     setObjectName(QStringLiteral("transport"));
 
     const QColor text = palette().color(QPalette::WindowText);
 
-    auto* layout = new QHBoxLayout(this);
+    auto *layout = new QHBoxLayout(this);
     layout->setContentsMargins(16, 10, 16, 10);
     layout->setSpacing(10);
 
@@ -23,31 +21,29 @@ TransportBar::TransportBar(QWidget* parent)
     m_playButton->setIcon(icons::themed(QStringLiteral("play"), text));
     m_playButton->setIconSize(QSize(24, 24));
     m_playButton->setMinimumSize(40, 36);
-    m_playButton->setToolTip(tr("Play (audio arrives in Stage 2)"));
+    m_playButton->setToolTip(QStringLiteral("Play"));
 
     m_stopButton = new QToolButton(this);
     m_stopButton->setIcon(icons::themed(QStringLiteral("stop"), text));
     m_stopButton->setIconSize(QSize(24, 24));
     m_stopButton->setMinimumSize(40, 36);
-    m_stopButton->setToolTip(tr("Stop (audio arrives in Stage 2)"));
+    m_stopButton->setToolTip(QStringLiteral("Stop"));
 
     m_loopButton = new QToolButton(this);
     m_loopButton->setIcon(icons::themed(QStringLiteral("repeat"), text));
     m_loopButton->setIconSize(QSize(24, 24));
     m_loopButton->setMinimumSize(40, 36);
     m_loopButton->setCheckable(true);
-    m_loopButton->setToolTip(tr("Loop (audio arrives in Stage 2)"));
+    m_loopButton->setToolTip(QStringLiteral("Loop"));
 
-    m_autoplayCheck = new QCheckBox(tr("Autoplay"), this);
-    m_autoplayCheck->setToolTip(tr("Autoplay selected file (arrives in Stage 4)"));
+    m_autoplayCheck = new QCheckBox(QStringLiteral("Autoplay"), this);
 
     m_volumeSlider = new QSlider(Qt::Horizontal, this);
     m_volumeSlider->setRange(0, 100);
     m_volumeSlider->setValue(80);
     m_volumeSlider->setFixedWidth(180);
-    m_volumeSlider->setToolTip(tr("Volume (arrives in Stage 2)"));
 
-    auto* volumeIcon = new QLabel(this);
+    auto *volumeIcon = new QLabel(this);
     volumeIcon->setPixmap(icons::themed(QStringLiteral("speaker-high"), text).pixmap(24, 24));
 
     connect(m_playButton, &QToolButton::clicked, this, &TransportBar::playClicked);
@@ -68,8 +64,7 @@ TransportBar::TransportBar(QWidget* parent)
     setControlsEnabled(false);
 }
 
-void TransportBar::setControlsEnabled(bool enabled)
-{
+void TransportBar::setControlsEnabled(bool enabled) {
     m_playButton->setEnabled(enabled);
     m_stopButton->setEnabled(enabled);
     m_loopButton->setEnabled(enabled);
@@ -77,12 +72,4 @@ void TransportBar::setControlsEnabled(bool enabled)
     m_volumeSlider->setEnabled(enabled);
 }
 
-int TransportBar::volume() const
-{
-    return m_volumeSlider->value();
-}
-
-void TransportBar::setVolume(int value)
-{
-    m_volumeSlider->setValue(value);
-}
+void TransportBar::setVolume(int value) { m_volumeSlider->setValue(value); }

@@ -2,13 +2,22 @@
 
 #include <QWidget>
 
-class WaveformWidget : public QWidget
-{
+#include "audio/waveform.h"
+
+class WaveformWidget : public QWidget {
     Q_OBJECT
 
-public:
-    explicit WaveformWidget(QWidget* parent = nullptr);
+  public:
+    explicit WaveformWidget(QWidget *parent = nullptr);
 
-protected:
-    void paintEvent(QPaintEvent* event) override;
+    void setData(const audio::WaveformData &data);
+    void clear();
+    void setProgress(double fraction);
+
+  protected:
+    void paintEvent(QPaintEvent *event) override;
+
+  private:
+    audio::WaveformData m_data;
+    double              m_progress = 0.0;
 };

@@ -1,8 +1,13 @@
 #include "filetable.h"
 
+#include "filetablemodel.h"
+#include "waveformdelegate.h"
+
+#include <QAbstractItemModel>
 #include <QAbstractItemView>
 #include <QHeaderView>
-#include <QStandardItemModel>
+#include <QItemSelectionModel>
+#include <QModelIndex>
 #include <QTableView>
 #include <QVBoxLayout>
 
@@ -14,17 +19,28 @@ FileTable::FileTable(QWidget* parent)
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
 
-    auto* table = new QTableView(this);
-    table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    table->setSelectionMode(QAbstractItemView::SingleSelection);
-    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    table->verticalHeader()->setVisible(false);
+    m_table = new QTableView(this);
+    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_table->verticalHeader()->setVisible(false);
+    m_table->verticalHeader()->setDefaultSectionSize(34);
+    m_table->horizontalHeader()->setStretchLastSection(true);
+    m_table->setItemDelegateForColumn(FileTableModel::Waveform, new WaveformDelegate(m_table));
 
-    auto* model = new QStandardItemModel(0, 5, table);
-    model->setHorizontalHeaderLabels({ tr("Name"), tr("Duration"), tr("Bit rate"),
-                                       tr("Channels"), tr("Format") });
-    table->setModel(model);
-    table->horizontalHeader()->setStretchLastSection(true);
+    layout->addWidget(m_table);
+}
 
-    layout->addWidget(table);
+void FileTable::setModel(QAbstractItemModel* model)
+{
+    m_table->setModel(model);
+
+    auto* header = m_table->horizontalHeader();
+    header->setSectionResizeMode(FileTableModel::Waveform, QHeaderView::Fixed);
+    m_table->setColumnWidth(FileTableModel::Waveform, 80);
+
+    connect(m_table->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
+            [this](const QModelIndex& current, const QModelIndex&) {
+                emit currentFileChanged(current.row());
+            });
 }
