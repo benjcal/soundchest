@@ -6,20 +6,11 @@
         <file alias="Inter-Bold.ttf">assets/fonts/Inter-Bold.ttf</file>
     </qresource>
     <qresource prefix="/icons">
-        <file alias="file-audio.svg">assets/icons/file-audio.svg</file>
+        <file alias="folder-closed.svg">assets/icons/folder-closed.svg</file>
         <file alias="folder-open.svg">assets/icons/folder-open.svg</file>
-        <file alias="folder.svg">assets/icons/folder.svg</file>
-        <file alias="gear.svg">assets/icons/gear.svg</file>
-        <file alias="magnifying-glass.svg">assets/icons/magnifying-glass.svg</file>
-        <file alias="music-note.svg">assets/icons/music-note.svg</file>
-        <file alias="music-notes.svg">assets/icons/music-notes.svg</file>
         <file alias="play.svg">assets/icons/play.svg</file>
-        <file alias="repeat-once.svg">assets/icons/repeat-once.svg</file>
         <file alias="repeat.svg">assets/icons/repeat.svg</file>
         <file alias="speaker-high.svg">assets/icons/speaker-high.svg</file>
-        <file alias="speaker-low.svg">assets/icons/speaker-low.svg</file>
-        <file alias="speaker-none.svg">assets/icons/speaker-none.svg</file>
-        <file alias="speaker-x.svg">assets/icons/speaker-x.svg</file>
         <file alias="stop.svg">assets/icons/stop.svg</file>
         <file alias="waveform.svg">assets/icons/waveform.svg</file>
     </qresource>
