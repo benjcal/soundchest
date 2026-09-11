@@ -2,50 +2,20 @@
 
 #include <QMainWindow>
 
-#include "audio/audiofile.h"
-#include "audio/waveform.h"
+namespace ui {
 
-class App;
-class FileTable;
-class FolderBrowser;
-class HeaderBar;
-class QModelIndex;
-class TransportBar;
-class WaveformWidget;
+class MainView;
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
-public:
-    explicit MainWindow(App* app, QWidget* parent = nullptr);
+  public:
+    explicit MainWindow(QWidget *parent = nullptr);
 
-signals:
-    void openFolderRequested(const QString& path);
-    void currentDirectoryChanged(const QModelIndex& index);
-    void currentFileChanged(int row);
-    void playClicked();
-    void stopClicked();
-    void loopToggled(bool enabled);
-    void volumeChanged(int value);
-    void autoplayChanged(bool enabled);
+    MainView *mainView() const;
 
-public slots:
-    void onFolderScanned(const QString& rootPath, int fileCount);
-    void onScanFailed(const QString& path);
-    void onDirectoryChanged();
-    void onFileLoaded(const audio::AudioInfo& info);
-    void onFileLoadFailed(const QString& fileName, const QString& error);
-    void onWaveformReady(const QString& filePath, audio::WaveformData data);
-    void onProgressChanged(double fraction);
-
-private:
-    void onOpenFolderRequested();
-
-    App* m_app;
-    HeaderBar* m_header;
-    WaveformWidget* m_waveform;
-    TransportBar* m_transport;
-    FolderBrowser* m_folderBrowser;
-    FileTable* m_fileTable;
+  private:
+    MainView *m_view;
 };
+
+} // namespace ui

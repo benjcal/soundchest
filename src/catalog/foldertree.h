@@ -5,28 +5,23 @@
 
 #include <memory>
 
-#include "audio/audiofile.h"
+#include "audio/audioinfo.h"
 
 namespace catalog {
 
-struct DirectoryNode
-{
-    QString path;
-    DirectoryNode* parent = nullptr;
-    QVector<DirectoryNode*> children;
+struct DirectoryNode {
+    QString                   path;
+    DirectoryNode            *parent = nullptr;
+    QVector<DirectoryNode *>  children;
     QVector<audio::AudioInfo> files;
-    ~DirectoryNode()
-    {
-        qDeleteAll(children);
-    }
+    ~DirectoryNode() { qDeleteAll(children); }
 };
 
-struct FolderTree
-{
+struct FolderTree {
     std::unique_ptr<DirectoryNode> root;
-    int fileCount() const;
+    int                            fileCount() const;
 };
 
-bool scanFolder(const QString& rootPath, FolderTree* out, QString* error = nullptr);
+bool scanFolder(const QString &rootPath, FolderTree *out, QString *error = nullptr);
 
 } // namespace catalog

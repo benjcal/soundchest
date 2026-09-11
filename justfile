@@ -16,6 +16,9 @@ build-release: configure-release
 run-release: build-release
     ./build-release/soundchest
 
+format:
+    clang-format -i $(find src -type f \( -name '*.cpp' -o -name '*.h' \))
+
 clean:
     -cmake --build build --target clean
     -cmake --build build-release --target clean

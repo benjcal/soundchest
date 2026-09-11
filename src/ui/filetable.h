@@ -5,18 +5,24 @@
 class QAbstractItemModel;
 class QTableView;
 
-class FileTable : public QWidget
-{
+namespace ui {
+
+class FileTable : public QWidget {
     Q_OBJECT
 
-public:
-    explicit FileTable(QWidget* parent = nullptr);
+  public:
+    explicit FileTable(QWidget *parent = nullptr);
 
-    void setModel(QAbstractItemModel* model);
+    void setModel(QAbstractItemModel *model);
 
-signals:
+  signals:
     void currentFileChanged(int row);
+    void visibleRowsChanged(int firstRow, int lastRow);
 
-private:
-    QTableView* m_table;
+  private:
+    void emitVisibleRows();
+
+    QTableView *m_table;
 };
+
+} // namespace ui

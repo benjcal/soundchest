@@ -6,11 +6,12 @@
 #include <QHeaderView>
 #include <QIcon>
 #include <QItemSelectionModel>
-#include <QPalette>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QVBoxLayout>
+
+namespace ui {
 
 namespace {
 
@@ -45,10 +46,10 @@ FolderBrowser::FolderBrowser(QWidget *parent) : QWidget(parent) {
     m_tree->setUniformRowHeights(true);
     m_tree->setExpandsOnDoubleClick(true);
 
-    const QColor color = palette().color(QPalette::Text);
     m_tree->setIconSize(QSize(18, 18));
-    m_tree->setItemDelegate(new FolderItemDelegate(m_tree, icons::themed(QStringLiteral("folder-closed"), color),
-                                                   icons::themed(QStringLiteral("folder-open"), color)));
+    m_tree->setItemDelegate(new FolderItemDelegate(m_tree, icons::mono(QStringLiteral("folder-closed")),
+                                                   icons::mono(QStringLiteral("folder-open"))));
+    icons::setAutoRecolor(m_tree);
 
     layout->addWidget(m_tree);
 }
@@ -69,3 +70,5 @@ void FolderBrowser::setModel(QAbstractItemModel *model) {
 void FolderBrowser::setCurrentIndex(const QModelIndex &index) { m_tree->setCurrentIndex(index); }
 
 void FolderBrowser::expand(const QModelIndex &index) { m_tree->expand(index); }
+
+} // namespace ui

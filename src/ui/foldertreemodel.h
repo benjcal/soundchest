@@ -2,7 +2,11 @@
 
 #include <QAbstractItemModel>
 
+#include <memory>
+
 #include "catalog/foldertree.h"
+
+namespace ui {
 
 class FolderTreeModel : public QAbstractItemModel {
     Q_OBJECT
@@ -10,7 +14,7 @@ class FolderTreeModel : public QAbstractItemModel {
   public:
     explicit FolderTreeModel(QObject *parent = nullptr);
 
-    void                             setTree(const catalog::FolderTree *tree);
+    void                             setTree(std::shared_ptr<const catalog::FolderTree> tree);
     const QVector<audio::AudioInfo> *filesFor(const QModelIndex &index) const;
 
     QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
@@ -22,5 +26,7 @@ class FolderTreeModel : public QAbstractItemModel {
   private:
     catalog::DirectoryNode *nodeFor(const QModelIndex &index) const;
 
-    const catalog::FolderTree *m_tree = nullptr;
+    std::shared_ptr<const catalog::FolderTree> m_tree;
 };
+
+} // namespace ui

@@ -2,11 +2,13 @@
 
 #include <QFileInfo>
 
+namespace ui {
+
 FolderTreeModel::FolderTreeModel(QObject *parent) : QAbstractItemModel(parent) {}
 
-void FolderTreeModel::setTree(const catalog::FolderTree *tree) {
+void FolderTreeModel::setTree(std::shared_ptr<const catalog::FolderTree> tree) {
     beginResetModel();
-    m_tree = tree;
+    m_tree = std::move(tree);
     endResetModel();
 }
 
@@ -84,3 +86,5 @@ catalog::DirectoryNode *FolderTreeModel::nodeFor(const QModelIndex &index) const
         return nullptr;
     return static_cast<catalog::DirectoryNode *>(index.internalPointer());
 }
+
+} // namespace ui

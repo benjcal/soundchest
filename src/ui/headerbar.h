@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+namespace ui {
+
 class HeaderBar : public QWidget {
     Q_OBJECT
 
@@ -11,3 +13,5 @@ class HeaderBar : public QWidget {
   signals:
     void openFolderRequested();
 };
+
+} // namespace ui

@@ -1,19 +1,17 @@
 #pragma once
 
 #include <QMetaType>
-#include <QString>
 #include <QVector>
 
-namespace audio {
+namespace waveform {
 
-struct WaveformData
-{
+struct WaveformData {
     QVector<float> mins;
     QVector<float> maxs;
 
     bool valid() const { return !mins.isEmpty() && !maxs.isEmpty(); }
 };
 
-} // namespace audio
+} // namespace waveform
 
-Q_DECLARE_METATYPE(audio::WaveformData)
+Q_DECLARE_METATYPE(waveform::WaveformData)

@@ -1,19 +1,20 @@
 #include "filetablemodel.h"
 
-#include "audio/waveformcache.h"
+#include "waveform/waveformcache.h"
 
 #include <QVariant>
 
+namespace ui {
+
 namespace {
 
-QString formatDuration(double seconds)
-{
+QString formatDuration(double seconds) {
     if (seconds < 60.0)
         return QStringLiteral("%1 s").arg(seconds, 0, 'f', 2);
 
     const int totalSeconds = static_cast<int>(seconds);
-    const int minutes = totalSeconds / 60;
-    const int secs = totalSeconds % 60;
+    const int minutes      = totalSeconds / 60;
+    const int secs         = totalSeconds % 60;
     if (minutes < 60)
         return QStringLiteral("%1:%2").arg(minutes).arg(secs, 2, 10, QLatin1Char('0'));
 
@@ -24,8 +25,7 @@ QString formatDuration(double seconds)
         .arg(secs, 2, 10, QLatin1Char('0'));
 }
 
-QString formatChannels(int channels)
-{
+QString formatChannels(int channels) {
     switch (channels) {
     case 1:
         return QStringLiteral("Mono");
@@ -38,20 +38,15 @@ QString formatChannels(int channels)
 
 } // namespace
 
-FileTableModel::FileTableModel(QObject* parent)
-    : QAbstractTableModel(parent)
-{
-}
+FileTableModel::FileTableModel(QObject *parent) : QAbstractTableModel(parent) {}
 
-void FileTableModel::setFiles(QVector<audio::AudioInfo> files)
-{
+void FileTableModel::setFiles(QVector<audio::AudioInfo> files) {
     beginResetModel();
     m_files = std::move(files);
     endResetModel();
 }
 
-void FileTableModel::setWaveformCache(audio::WaveformCache* cache)
-{
+void FileTableModel::setWaveformCache(waveform::WaveformCache *cache) {
     if (m_waveformCache == cache)
         return;
 
@@ -61,50 +56,37 @@ void FileTableModel::setWaveformCache(audio::WaveformCache* cache)
     m_waveformCache = cache;
 
     if (m_waveformCache) {
-        connect(m_waveformCache, &audio::WaveformCache::ready, this,
-                [this](const QString& filePath) {
-                    for (int row = 0; row < m_files.size(); ++row) {
-                        if (m_files.at(row).filePath != filePath)
-                            continue;
-                        const QModelIndex changed = index(row, Waveform);
-                        emit dataChanged(changed, changed, { WaveformRole });
-                    }
-                });
+        connect(m_waveformCache, &waveform::WaveformCache::ready, this, [this](const QString &filePath) {
+            for (int row = 0; row < m_files.size(); ++row) {
+                if (m_files.at(row).filePath != filePath)
+                    continue;
+                const QModelIndex changed = index(row, Waveform);
+                emit              dataChanged(changed, changed, {WaveformRole});
+            }
+        });
     }
 }
 
-audio::AudioInfo FileTableModel::audioInfo(int row) const
-{
+audio::AudioInfo FileTableModel::audioInfo(int row) const {
     if (row < 0 || row >= m_files.size())
         return {};
     return m_files.at(row);
 }
 
-int FileTableModel::rowCount(const QModelIndex& parent) const
-{
-    return parent.isValid() ? 0 : m_files.size();
-}
+int FileTableModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : m_files.size(); }
 
-int FileTableModel::columnCount(const QModelIndex& parent) const
-{
-    return parent.isValid() ? 0 : ColumnCount;
-}
+int FileTableModel::columnCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : ColumnCount; }
 
-QVariant FileTableModel::data(const QModelIndex& index, int role) const
-{
+QVariant FileTableModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid() || index.row() >= m_files.size())
         return {};
 
-    const audio::AudioInfo& info = m_files.at(index.row());
+    const audio::AudioInfo &info = m_files.at(index.row());
 
     if (role == WaveformRole) {
         if (!m_waveformCache || info.filePath.isEmpty())
             return {};
-        const audio::WaveformData cached = m_waveformCache->get(info.filePath);
-        if (cached.valid())
-            return QVariant::fromValue(cached);
-        m_waveformCache->request(info.filePath);
-        return {};
+        return QVariant::fromValue(m_waveformCache->get(info.filePath));
     }
 
     if (role == Qt::DisplayRole) {
@@ -116,9 +98,8 @@ QVariant FileTableModel::data(const QModelIndex& index, int role) const
         case Duration:
             return formatDuration(info.durationSec);
         case BitRate:
-            return info.bitRateKbps > 0.0
-                       ? QStringLiteral("%1 kbps").arg(qRound(info.bitRateKbps))
-                       : QStringLiteral("—");
+            return info.bitRateKbps > 0.0 ? QStringLiteral("%1 kbps").arg(qRound(info.bitRateKbps))
+                                          : QStringLiteral("—");
         case Channels:
             return formatChannels(info.channels);
         case Format:
@@ -134,8 +115,7 @@ QVariant FileTableModel::data(const QModelIndex& index, int role) const
     return {};
 }
 
-QVariant FileTableModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
+QVariant FileTableModel::headerData(int section, Qt::Orientation orientation, int role) const {
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
         return {};
 
@@ -156,3 +136,5 @@ QVariant FileTableModel::headerData(int section, Qt::Orientation orientation, in
         return {};
     }
 }
+
+} // namespace ui

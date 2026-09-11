@@ -2,9 +2,15 @@
 
 #include <QWidget>
 
-class QCheckBox;
+class QLabel;
 class QSlider;
 class QToolButton;
+
+namespace oclero::qlementine {
+class Switch;
+} // namespace oclero::qlementine
+
+namespace ui {
 
 class TransportBar : public QWidget {
     Q_OBJECT
@@ -23,9 +29,11 @@ class TransportBar : public QWidget {
     void volumeChanged(int value);
 
   private:
-    QToolButton *m_playButton;
-    QToolButton *m_stopButton;
-    QToolButton *m_loopButton;
-    QCheckBox   *m_autoplayCheck;
-    QSlider     *m_volumeSlider;
+    QToolButton                *m_playButton;
+    QToolButton                *m_stopButton;
+    QToolButton                *m_loopButton;
+    oclero::qlementine::Switch *m_autoplaySwitch;
+    QSlider                    *m_volumeSlider;
 };
+
+} // namespace ui

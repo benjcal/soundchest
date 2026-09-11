@@ -2,7 +2,9 @@
 
 #include <QWidget>
 
-#include "audio/waveform.h"
+#include "waveform/waveform.h"
+
+namespace ui {
 
 class WaveformWidget : public QWidget {
     Q_OBJECT
@@ -10,7 +12,7 @@ class WaveformWidget : public QWidget {
   public:
     explicit WaveformWidget(QWidget *parent = nullptr);
 
-    void setData(const audio::WaveformData &data);
+    void setData(const waveform::WaveformData &data);
     void clear();
     void setProgress(double fraction);
 
@@ -18,6 +20,8 @@ class WaveformWidget : public QWidget {
     void paintEvent(QPaintEvent *event) override;
 
   private:
-    audio::WaveformData m_data;
-    double              m_progress = 0.0;
+    waveform::WaveformData m_data;
+    double                 m_progress = 0.0;
 };
+
+} // namespace ui

@@ -3,12 +3,14 @@
 #include <QAbstractTableModel>
 #include <QVector>
 
-#include "audio/audiofile.h"
-#include "audio/waveform.h"
+#include "audio/audioinfo.h"
+#include "waveform/waveform.h"
 
-namespace audio {
+namespace waveform {
 class WaveformCache;
-} // namespace audio
+} // namespace waveform
+
+namespace ui {
 
 class FileTableModel : public QAbstractTableModel {
     Q_OBJECT
@@ -31,7 +33,7 @@ class FileTableModel : public QAbstractTableModel {
     explicit FileTableModel(QObject *parent = nullptr);
 
     void             setFiles(QVector<audio::AudioInfo> files);
-    void             setWaveformCache(audio::WaveformCache *cache);
+    void             setWaveformCache(waveform::WaveformCache *cache);
     audio::AudioInfo audioInfo(int row) const;
 
     int      rowCount(const QModelIndex &parent = {}) const override;
@@ -41,5 +43,7 @@ class FileTableModel : public QAbstractTableModel {
 
   private:
     QVector<audio::AudioInfo> m_files;
-    audio::WaveformCache     *m_waveformCache = nullptr;
+    waveform::WaveformCache  *m_waveformCache = nullptr;
 };
+
+} // namespace ui
