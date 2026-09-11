@@ -1,5 +1,5 @@
+#include "app.h"
 #include "theme.h"
-#include "ui/mainwindow.h"
 
 #include <QApplication>
 #include <QFile>
@@ -20,12 +20,12 @@ void loadFonts() {
     for (const QString &file : files)
         QFontDatabase::addApplicationFont(file);
 
-    const QStringList families = QFontDatabase::families(QFontDatabase::Any);
-    if (families.contains(QStringLiteral("Inter"))) {
-        QFont font(QStringLiteral("Inter"));
-        font.setPointSizeF(10.5);
-        QApplication::setFont(font);
-    }
+    if (!QFontDatabase::families().contains(QStringLiteral("Inter")))
+        return;
+
+    QFont font(QStringLiteral("Inter"));
+    font.setPointSizeF(10.5);
+    QApplication::setFont(font);
 }
 
 } // namespace
@@ -38,16 +38,16 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName(QStringLiteral("soundchest"));
 
     QApplication::setStyle(QStringLiteral("Fusion"));
-    app.setPalette(theme::blenderPalette());
+    // app.setPalette(theme::blenderPalette());
 
-    QFile qss(QStringLiteral(":/styles/app.qss"));
-    if (qss.open(QIODevice::ReadOnly))
-        app.setStyleSheet(QString::fromUtf8(qss.readAll()));
+    // QFile qss(QStringLiteral(":/styles/app.qss"));
+    // if (qss.open(QIODevice::ReadOnly))
+    //     app.setStyleSheet(QString::fromUtf8(qss.readAll()));
 
     loadFonts();
 
-    MainWindow window;
-    window.show();
+    App controller;
+    controller.start();
 
     return app.exec();
 }
