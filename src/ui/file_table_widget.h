@@ -7,11 +7,11 @@ class QTableView;
 
 namespace ui {
 
-class FileTable : public QWidget {
+class FileTableWidget : public QWidget {
     Q_OBJECT
 
   public:
-    explicit FileTable(QWidget *parent = nullptr);
+    explicit FileTableWidget(QWidget *parent = nullptr);
 
     void setModel(QAbstractItemModel *model);
 

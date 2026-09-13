@@ -15,25 +15,24 @@ set(CMAKE_AUTORCC ON)
 qt_add_executable(soundchest
     src/main.cpp
     src/appcontroller.cpp
-    src/icons.cpp
     src/audio/miniaudio_impl.cpp
-    src/audio/audioinfo.cpp
     src/audio/sndfiledatasource.cpp
     src/audio/player.cpp
-    src/catalog/foldertree.cpp
-    src/waveform/waveformbuilder.cpp
-    src/waveform/waveformcache.cpp
-    src/waveform/waveformrenderer.cpp
-    src/ui/mainwindow.cpp
-    src/ui/mainview.cpp
+    src/library/audio_file.cpp
+    src/library/folder.cpp
+    src/waveform/builder.cpp
+    src/waveform/peaks_cache.cpp
+    src/ui/icons.cpp
+    src/ui/window.cpp
     src/ui/headerbar.cpp
-    src/ui/transportbar.cpp
-    src/ui/waveformwidget.cpp
-    src/ui/waveformdelegate.cpp
-    src/ui/folderbrowser.cpp
-    src/ui/filetable.cpp
-    src/ui/foldertreemodel.cpp
-    src/ui/filetablemodel.cpp
+    src/ui/transport_controls.cpp
+    src/ui/waveform_widget.cpp
+    src/ui/waveform_painter.cpp
+    src/ui/folder_tree_widget.cpp
+    src/ui/file_table_widget.cpp
+    src/ui/folder_tree_widget_model.cpp
+    src/ui/file_table_widget_model.cpp
+    src/ui/file_table_widget_waveform_delegate.cpp
     resources.qrc
 )
 

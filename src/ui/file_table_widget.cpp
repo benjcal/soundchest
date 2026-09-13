@@ -1,7 +1,7 @@
-#include "filetable.h"
+#include "file_table_widget.h"
 
-#include "filetablemodel.h"
-#include "waveformdelegate.h"
+#include "file_table_widget_model.h"
+#include "file_table_widget_waveform_delegate.h"
 
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
@@ -16,7 +16,7 @@
 
 namespace ui {
 
-FileTable::FileTable(QWidget *parent) : QWidget(parent) {
+FileTableWidget::FileTableWidget(QWidget *parent) : QWidget(parent) {
     setObjectName(QStringLiteral("filePane"));
 
     auto *layout = new QVBoxLayout(this);
@@ -29,28 +29,28 @@ FileTable::FileTable(QWidget *parent) : QWidget(parent) {
     m_table->verticalHeader()->setVisible(false);
     m_table->verticalHeader()->setDefaultSectionSize(34);
     m_table->horizontalHeader()->setStretchLastSection(true);
-    m_table->setItemDelegateForColumn(FileTableModel::Waveform, new WaveformDelegate(m_table));
+    m_table->setItemDelegateForColumn(FileTableWidgetModel::Waveform, new FileTableWidgetWaveformDelegate(m_table));
 
-    connect(m_table->verticalScrollBar(), &QScrollBar::valueChanged, this, &FileTable::emitVisibleRows);
+    connect(m_table->verticalScrollBar(), &QScrollBar::valueChanged, this, &FileTableWidget::emitVisibleRows);
 
     layout->addWidget(m_table);
 }
 
-void FileTable::setModel(QAbstractItemModel *model) {
+void FileTableWidget::setModel(QAbstractItemModel *model) {
     m_table->setModel(model);
 
     auto *header = m_table->horizontalHeader();
-    header->setSectionResizeMode(FileTableModel::Waveform, QHeaderView::Fixed);
-    m_table->setColumnWidth(FileTableModel::Waveform, 80);
+    header->setSectionResizeMode(FileTableWidgetModel::Waveform, QHeaderView::Fixed);
+    m_table->setColumnWidth(FileTableWidgetModel::Waveform, 80);
 
-    connect(model, &QAbstractItemModel::modelReset, this, &FileTable::emitVisibleRows);
-    connect(model, &QAbstractItemModel::rowsInserted, this, &FileTable::emitVisibleRows);
+    connect(model, &QAbstractItemModel::modelReset, this, &FileTableWidget::emitVisibleRows);
+    connect(model, &QAbstractItemModel::rowsInserted, this, &FileTableWidget::emitVisibleRows);
 
     connect(m_table->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
             [this](const QModelIndex &current, const QModelIndex &) { emit currentFileChanged(current.row()); });
 }
 
-void FileTable::emitVisibleRows() {
+void FileTableWidget::emitVisibleRows() {
     QAbstractItemModel *model = m_table->model();
     if (!model)
         return;

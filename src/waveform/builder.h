@@ -8,31 +8,31 @@
 #include <atomic>
 #include <memory>
 
-#include "waveform.h"
+#include "peaks.h"
 
 namespace waveform {
 
-WaveformData buildWaveform(const QString &filePath, int columnCount, const std::atomic<int> *cancel = nullptr,
+Peaks buildPeaks(const QString &filePath, int columnCount, const std::atomic<int> *cancel = nullptr,
                            int generation = 0);
 
-class WaveformBuilder : public QObject {
+class PeaksBuilder : public QObject {
     Q_OBJECT
 
   public:
-    explicit WaveformBuilder(QObject *parent = nullptr);
+    explicit PeaksBuilder(QObject *parent = nullptr);
 
     void request(const QString &filePath, int columnCount);
     void cancel();
 
   signals:
-    void waveformReady(const QString &filePath, WaveformData data);
+    void peaksReady(const QString &filePath, Peaks data);
 
   private:
     void onFinished();
 
     std::shared_ptr<std::atomic<int>> m_cancel;
-    QFuture<WaveformData>             m_future;
-    QFutureWatcher<WaveformData>     *m_watcher;
+    QFuture<Peaks>             m_future;
+    QFutureWatcher<Peaks>     *m_watcher;
     QString                           m_requestedPath;
 };
 

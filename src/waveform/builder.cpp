@@ -1,4 +1,4 @@
-#include "waveformbuilder.h"
+#include "builder.h"
 
 #include <QtConcurrent>
 
@@ -9,8 +9,8 @@
 
 namespace waveform {
 
-WaveformData buildWaveform(const QString &filePath, int columnCount, const std::atomic<int> *cancel, int generation) {
-    WaveformData data;
+Peaks buildPeaks(const QString &filePath, int columnCount, const std::atomic<int> *cancel, int generation) {
+    Peaks data;
     if (columnCount <= 0)
         return data;
 
@@ -84,13 +84,13 @@ WaveformData buildWaveform(const QString &filePath, int columnCount, const std::
     return data;
 }
 
-WaveformBuilder::WaveformBuilder(QObject *parent)
+PeaksBuilder::PeaksBuilder(QObject *parent)
     : QObject(parent), m_cancel(std::make_shared<std::atomic<int>>(0)),
-      m_watcher(new QFutureWatcher<WaveformData>(this)) {
-    connect(m_watcher, &QFutureWatcher<WaveformData>::finished, this, &WaveformBuilder::onFinished);
+      m_watcher(new QFutureWatcher<Peaks>(this)) {
+    connect(m_watcher, &QFutureWatcher<Peaks>::finished, this, &PeaksBuilder::onFinished);
 }
 
-void WaveformBuilder::request(const QString &filePath, int columnCount) {
+void PeaksBuilder::request(const QString &filePath, int columnCount) {
     if (columnCount <= 0)
         return;
 
@@ -99,17 +99,17 @@ void WaveformBuilder::request(const QString &filePath, int columnCount) {
 
     const auto cancel = m_cancel;
     m_future          = QtConcurrent::run([filePath, columnCount, cancel, generation] {
-        return buildWaveform(filePath, columnCount, cancel.get(), generation);
+        return buildPeaks(filePath, columnCount, cancel.get(), generation);
     });
     m_watcher->setFuture(m_future);
 }
 
-void WaveformBuilder::cancel() { ++(*m_cancel); }
+void PeaksBuilder::cancel() { ++(*m_cancel); }
 
-void WaveformBuilder::onFinished() {
+void PeaksBuilder::onFinished() {
     if (!m_future.isFinished())
         return;
-    emit waveformReady(m_requestedPath, m_future.result());
+    emit peaksReady(m_requestedPath, m_future.result());
 }
 
 } // namespace waveform

@@ -3,16 +3,16 @@
 #include <QAbstractTableModel>
 #include <QVector>
 
-#include "audio/audioinfo.h"
-#include "waveform/waveform.h"
+#include "library/audio_file.h"
+#include "waveform/peaks.h"
 
 namespace waveform {
-class WaveformCache;
+class PeaksCache;
 } // namespace waveform
 
 namespace ui {
 
-class FileTableModel : public QAbstractTableModel {
+class FileTableWidgetModel : public QAbstractTableModel {
     Q_OBJECT
 
   public:
@@ -30,11 +30,11 @@ class FileTableModel : public QAbstractTableModel {
         WaveformRole = Qt::UserRole + 1,
     };
 
-    explicit FileTableModel(QObject *parent = nullptr);
+    explicit FileTableWidgetModel(QObject *parent = nullptr);
 
-    void             setFiles(QVector<audio::AudioInfo> files);
-    void             setWaveformCache(waveform::WaveformCache *cache);
-    audio::AudioInfo audioInfo(int row) const;
+    void             setFiles(QVector<library::AudioFile> files);
+    void             setPeaksCache(waveform::PeaksCache *cache);
+    library::AudioFile audioInfo(int row) const;
 
     int      rowCount(const QModelIndex &parent = {}) const override;
     int      columnCount(const QModelIndex &parent = {}) const override;
@@ -42,8 +42,8 @@ class FileTableModel : public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
   private:
-    QVector<audio::AudioInfo> m_files;
-    waveform::WaveformCache  *m_waveformCache = nullptr;
+    QVector<library::AudioFile> m_files;
+    waveform::PeaksCache    *m_waveformCache = nullptr;
 };
 
 } // namespace ui

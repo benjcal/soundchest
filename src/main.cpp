@@ -1,7 +1,7 @@
 #include "appcontroller.h"
-#include "ui/filetablemodel.h"
-#include "ui/foldertreemodel.h"
-#include "ui/mainwindow.h"
+#include "ui/file_table_widget_model.h"
+#include "ui/folder_tree_widget_model.h"
+#include "ui/window.h"
 
 #include <QApplication>
 
@@ -21,11 +21,11 @@ int main(int argc, char *argv[]) {
     QApplication::setStyle(style);
     style->setThemeJsonPath(QStringLiteral(":/themes/gruvbox.json"));
 
-    ui::MainWindow      window;
-    ui::FolderTreeModel folderModel;
-    ui::FileTableModel  fileModel;
+    ui::Window      window;
+    ui::FolderTreeWidgetModel folderModel;
+    ui::FileTableWidgetModel  fileModel;
 
-    AppController controller(&folderModel, &fileModel, window.mainView());
+    AppController controller(&folderModel, &fileModel, &window);
     controller.start();
 
     window.show();

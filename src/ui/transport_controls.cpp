@@ -1,4 +1,4 @@
-#include "transportbar.h"
+#include "transport_controls.h"
 
 #include "icons.h"
 
@@ -11,7 +11,7 @@
 
 namespace ui {
 
-TransportBar::TransportBar(QWidget *parent) : QWidget(parent) {
+TransportControls::TransportControls(QWidget *parent) : QWidget(parent) {
     setObjectName(QStringLiteral("transport"));
 
     auto *layout = new QHBoxLayout(this);
@@ -52,11 +52,11 @@ TransportBar::TransportBar(QWidget *parent) : QWidget(parent) {
     volumeIcon->setPixmap(
         icons::colorized(QStringLiteral("speaker-high"), QSize(24, 24), palette().color(QPalette::WindowText)));
 
-    connect(m_playButton, &QToolButton::clicked, this, &TransportBar::playClicked);
-    connect(m_stopButton, &QToolButton::clicked, this, &TransportBar::stopClicked);
-    connect(m_loopButton, &QToolButton::toggled, this, &TransportBar::loopToggled);
-    connect(m_autoplaySwitch, &oclero::qlementine::Switch::toggled, this, &TransportBar::autoplayChanged);
-    connect(m_volumeSlider, &QSlider::valueChanged, this, &TransportBar::volumeChanged);
+    connect(m_playButton, &QToolButton::clicked, this, &TransportControls::playClicked);
+    connect(m_stopButton, &QToolButton::clicked, this, &TransportControls::stopClicked);
+    connect(m_loopButton, &QToolButton::toggled, this, &TransportControls::loopToggled);
+    connect(m_autoplaySwitch, &oclero::qlementine::Switch::toggled, this, &TransportControls::autoplayChanged);
+    connect(m_volumeSlider, &QSlider::valueChanged, this, &TransportControls::volumeChanged);
 
     layout->addWidget(m_playButton);
     layout->addWidget(m_stopButton);
@@ -71,7 +71,7 @@ TransportBar::TransportBar(QWidget *parent) : QWidget(parent) {
     setControlsEnabled(false);
 }
 
-void TransportBar::setControlsEnabled(bool enabled) {
+void TransportControls::setControlsEnabled(bool enabled) {
     m_playButton->setEnabled(enabled);
     m_stopButton->setEnabled(enabled);
     m_loopButton->setEnabled(enabled);
@@ -79,6 +79,6 @@ void TransportBar::setControlsEnabled(bool enabled) {
     m_volumeSlider->setEnabled(enabled);
 }
 
-void TransportBar::setVolume(int value) { m_volumeSlider->setValue(value); }
+void TransportControls::setVolume(int value) { m_volumeSlider->setValue(value); }
 
 } // namespace ui

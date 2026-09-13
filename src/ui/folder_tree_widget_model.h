@@ -4,18 +4,18 @@
 
 #include <memory>
 
-#include "catalog/foldertree.h"
+#include "library/folder.h"
 
 namespace ui {
 
-class FolderTreeModel : public QAbstractItemModel {
+class FolderTreeWidgetModel : public QAbstractItemModel {
     Q_OBJECT
 
   public:
-    explicit FolderTreeModel(QObject *parent = nullptr);
+    explicit FolderTreeWidgetModel(QObject *parent = nullptr);
 
-    void                             setTree(std::shared_ptr<const catalog::FolderTree> tree);
-    const QVector<audio::AudioInfo> *filesFor(const QModelIndex &index) const;
+    void                             setFolder(std::shared_ptr<const library::Folder> folder);
+    const QVector<library::AudioFile> *filesFor(const QModelIndex &index) const;
 
     QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
     QModelIndex parent(const QModelIndex &index) const override;
@@ -24,9 +24,9 @@ class FolderTreeModel : public QAbstractItemModel {
     QVariant    data(const QModelIndex &index, int role) const override;
 
   private:
-    catalog::DirectoryNode *nodeFor(const QModelIndex &index) const;
+    library::FolderNode *nodeFor(const QModelIndex &index) const;
 
-    std::shared_ptr<const catalog::FolderTree> m_tree;
+    std::shared_ptr<const library::Folder> m_tree;
 };
 
 } // namespace ui

@@ -12,11 +12,11 @@ class Switch;
 
 namespace ui {
 
-class TransportBar : public QWidget {
+class TransportControls : public QWidget {
     Q_OBJECT
 
   public:
-    explicit TransportBar(QWidget *parent = nullptr);
+    explicit TransportControls(QWidget *parent = nullptr);
 
     void setControlsEnabled(bool enabled);
     void setVolume(int value);

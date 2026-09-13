@@ -1,7 +1,7 @@
-#include "waveformdelegate.h"
+#include "file_table_widget_waveform_delegate.h"
 
-#include "filetablemodel.h"
-#include "waveform/waveformrenderer.h"
+#include "file_table_widget_model.h"
+#include "ui/waveform_painter.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -18,16 +18,16 @@ constexpr int verticalPadding   = 5;
 
 } // namespace
 
-WaveformDelegate::WaveformDelegate(QObject *parent) : QStyledItemDelegate(parent) {}
+FileTableWidgetWaveformDelegate::FileTableWidgetWaveformDelegate(QObject *parent) : QStyledItemDelegate(parent) {}
 
-void WaveformDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const {
+void FileTableWidgetWaveformDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const {
     QStyledItemDelegate::paint(painter, option, index);
 
     const QRectF area = option.rect.adjusted(horizontalPadding, verticalPadding, -horizontalPadding, -verticalPadding);
     if (area.width() <= 0 || area.height() <= 0)
         return;
 
-    const auto data = index.data(FileTableModel::WaveformRole).value<waveform::WaveformData>();
+    const auto data = index.data(FileTableWidgetModel::WaveformRole).value<waveform::Peaks>();
 
     if (!data.valid()) {
         waveform::paintMidline(painter, area, option.palette.color(QPalette::Mid));
@@ -50,7 +50,7 @@ void WaveformDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
     waveform::paintMidline(painter, area, option.palette.color(QPalette::Mid));
 }
 
-QSize WaveformDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const {
+QSize FileTableWidgetWaveformDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const {
     Q_UNUSED(option);
     Q_UNUSED(index);
     return QSize(150, 34);

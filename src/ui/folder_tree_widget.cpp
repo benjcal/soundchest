@@ -1,4 +1,4 @@
-#include "folderbrowser.h"
+#include "folder_tree_widget.h"
 
 #include "icons.h"
 
@@ -35,7 +35,7 @@ class FolderItemDelegate : public QStyledItemDelegate {
 
 } // namespace
 
-FolderBrowser::FolderBrowser(QWidget *parent) : QWidget(parent) {
+FolderTreeWidget::FolderTreeWidget(QWidget *parent) : QWidget(parent) {
     setObjectName(QStringLiteral("folderPane"));
 
     auto *layout = new QVBoxLayout(this);
@@ -54,21 +54,21 @@ FolderBrowser::FolderBrowser(QWidget *parent) : QWidget(parent) {
     layout->addWidget(m_tree);
 }
 
-void FolderBrowser::setModel(QAbstractItemModel *model) {
+void FolderTreeWidget::setModel(QAbstractItemModel *model) {
     if (m_selection) {
-        disconnect(m_selection, &QItemSelectionModel::currentChanged, this, &FolderBrowser::currentDirectoryChanged);
+        disconnect(m_selection, &QItemSelectionModel::currentChanged, this, &FolderTreeWidget::currentDirectoryChanged);
     }
 
     m_tree->setModel(model);
     m_selection = m_tree->selectionModel();
 
     if (m_selection) {
-        connect(m_selection, &QItemSelectionModel::currentChanged, this, &FolderBrowser::currentDirectoryChanged);
+        connect(m_selection, &QItemSelectionModel::currentChanged, this, &FolderTreeWidget::currentDirectoryChanged);
     }
 }
 
-void FolderBrowser::setCurrentIndex(const QModelIndex &index) { m_tree->setCurrentIndex(index); }
+void FolderTreeWidget::setCurrentIndex(const QModelIndex &index) { m_tree->setCurrentIndex(index); }
 
-void FolderBrowser::expand(const QModelIndex &index) { m_tree->expand(index); }
+void FolderTreeWidget::expand(const QModelIndex &index) { m_tree->expand(index); }
 
 } // namespace ui

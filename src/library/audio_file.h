@@ -2,9 +2,9 @@
 
 #include <QString>
 
-namespace audio {
+namespace library {
 
-struct AudioInfo {
+struct AudioFile {
     QString fileName;
     QString filePath;
     double  durationSec = 0.0;
@@ -15,6 +15,6 @@ struct AudioInfo {
     double  bitRateKbps   = 0.0;
 };
 
-bool readInfo(const QString &filePath, AudioInfo *out, QString *error = nullptr);
+bool readAudioFile(const QString &filePath, AudioFile *out, QString *error = nullptr);
 
-} // namespace audio
+} // namespace library

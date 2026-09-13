@@ -1,6 +1,6 @@
-#include "filetablemodel.h"
+#include "file_table_widget_model.h"
 
-#include "waveform/waveformcache.h"
+#include "waveform/peaks_cache.h"
 
 #include <QVariant>
 
@@ -38,15 +38,15 @@ QString formatChannels(int channels) {
 
 } // namespace
 
-FileTableModel::FileTableModel(QObject *parent) : QAbstractTableModel(parent) {}
+FileTableWidgetModel::FileTableWidgetModel(QObject *parent) : QAbstractTableModel(parent) {}
 
-void FileTableModel::setFiles(QVector<audio::AudioInfo> files) {
+void FileTableWidgetModel::setFiles(QVector<library::AudioFile> files) {
     beginResetModel();
     m_files = std::move(files);
     endResetModel();
 }
 
-void FileTableModel::setWaveformCache(waveform::WaveformCache *cache) {
+void FileTableWidgetModel::setPeaksCache(waveform::PeaksCache *cache) {
     if (m_waveformCache == cache)
         return;
 
@@ -56,7 +56,7 @@ void FileTableModel::setWaveformCache(waveform::WaveformCache *cache) {
     m_waveformCache = cache;
 
     if (m_waveformCache) {
-        connect(m_waveformCache, &waveform::WaveformCache::ready, this, [this](const QString &filePath) {
+        connect(m_waveformCache, &waveform::PeaksCache::ready, this, [this](const QString &filePath) {
             for (int row = 0; row < m_files.size(); ++row) {
                 if (m_files.at(row).filePath != filePath)
                     continue;
@@ -67,21 +67,21 @@ void FileTableModel::setWaveformCache(waveform::WaveformCache *cache) {
     }
 }
 
-audio::AudioInfo FileTableModel::audioInfo(int row) const {
+library::AudioFile FileTableWidgetModel::audioInfo(int row) const {
     if (row < 0 || row >= m_files.size())
         return {};
     return m_files.at(row);
 }
 
-int FileTableModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : m_files.size(); }
+int FileTableWidgetModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : m_files.size(); }
 
-int FileTableModel::columnCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : ColumnCount; }
+int FileTableWidgetModel::columnCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : ColumnCount; }
 
-QVariant FileTableModel::data(const QModelIndex &index, int role) const {
+QVariant FileTableWidgetModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid() || index.row() >= m_files.size())
         return {};
 
-    const audio::AudioInfo &info = m_files.at(index.row());
+    const library::AudioFile &info = m_files.at(index.row());
 
     if (role == WaveformRole) {
         if (!m_waveformCache || info.filePath.isEmpty())
@@ -115,7 +115,7 @@ QVariant FileTableModel::data(const QModelIndex &index, int role) const {
     return {};
 }
 
-QVariant FileTableModel::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant FileTableWidgetModel::headerData(int section, Qt::Orientation orientation, int role) const {
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
         return {};
 

@@ -1,4 +1,4 @@
-#include "audioinfo.h"
+#include "library/audio_file.h"
 
 #include <QFileInfo>
 
@@ -61,9 +61,9 @@ QString formatLabel(int sfFormat) {
 
 } // namespace
 
-namespace audio {
+namespace library {
 
-bool readInfo(const QString &filePath, AudioInfo *out, QString *error) {
+bool readAudioFile(const QString &filePath, AudioFile *out, QString *error) {
     SF_INFO info;
     std::memset(&info, 0, sizeof(info));
 
@@ -89,4 +89,4 @@ bool readInfo(const QString &filePath, AudioInfo *out, QString *error) {
     return true;
 }
 
-} // namespace audio
+} // namespace library

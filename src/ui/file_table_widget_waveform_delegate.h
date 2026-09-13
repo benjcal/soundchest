@@ -4,11 +4,11 @@
 
 namespace ui {
 
-class WaveformDelegate : public QStyledItemDelegate {
+class FileTableWidgetWaveformDelegate : public QStyledItemDelegate {
     Q_OBJECT
 
   public:
-    explicit WaveformDelegate(QObject *parent = nullptr);
+    explicit FileTableWidgetWaveformDelegate(QObject *parent = nullptr);
 
     void  paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;

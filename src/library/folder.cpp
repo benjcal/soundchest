@@ -1,4 +1,4 @@
-#include "foldertree.h"
+#include "folder.h"
 
 #include <QCollator>
 #include <QDir>
@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <memory>
 
-namespace catalog {
+namespace library {
 
 namespace {
 
@@ -33,22 +33,22 @@ QStringList sortedByName(const QStringList &names) {
 
 } // namespace
 
-int FolderTree::fileCount() const {
+int Folder::fileCount() const {
     int count = 0;
     if (!root)
         return 0;
 
-    QVector<const DirectoryNode *> stack{root.get()};
+    QVector<const FolderNode *> stack{root.get()};
     while (!stack.isEmpty()) {
-        const DirectoryNode *node = stack.takeLast();
+        const FolderNode *node = stack.takeLast();
         count += node->files.size();
-        for (const DirectoryNode *child : node->children)
+        for (const FolderNode *child : node->children)
             stack.append(child);
     }
     return count;
 }
 
-bool scanFolder(const QString &rootPath, FolderTree *out, QString *error) {
+bool scan(const QString &rootPath, Folder *out, QString *error) {
     if (!out || !QFileInfo::exists(rootPath)) {
         if (error)
             *error = QStringLiteral("folder does not exist");
@@ -58,7 +58,7 @@ bool scanFolder(const QString &rootPath, FolderTree *out, QString *error) {
     const QString root = QDir(rootPath).absolutePath();
 
     QStringList                               directories;
-    QHash<QString, QVector<audio::AudioInfo>> filesByDir;
+    QHash<QString, QVector<library::AudioFile>> filesByDir;
 
     QDirIterator it(rootPath, QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     while (it.hasNext()) {
@@ -73,33 +73,33 @@ bool scanFolder(const QString &rootPath, FolderTree *out, QString *error) {
         if (!audioExtensions().contains(info.suffix().toLower()))
             continue;
 
-        audio::AudioInfo audioInfo;
-        if (!audio::readInfo(info.absoluteFilePath(), &audioInfo))
+        library::AudioFile audioInfo;
+        if (!library::readAudioFile(info.absoluteFilePath(), &audioInfo))
             continue;
 
         filesByDir[info.absolutePath()].append(audioInfo);
     }
 
-    for (QVector<audio::AudioInfo> &files : filesByDir)
-        std::sort(files.begin(), files.end(), [](const audio::AudioInfo &a, const audio::AudioInfo &b) {
+    for (QVector<library::AudioFile> &files : filesByDir)
+        std::sort(files.begin(), files.end(), [](const library::AudioFile &a, const library::AudioFile &b) {
             return a.fileName.localeAwareCompare(b.fileName) < 0;
         });
 
     directories = sortedByName(directories);
 
-    out->root       = std::make_unique<DirectoryNode>();
+    out->root       = std::make_unique<FolderNode>();
     out->root->path = root;
 
-    QHash<QString, DirectoryNode *> byPath;
+    QHash<QString, FolderNode *> byPath;
     byPath.insert(root, out->root.get());
 
     for (const QString &dir : directories) {
-        auto *node = new DirectoryNode;
+        auto *node = new FolderNode;
         node->path = dir;
         byPath.insert(dir, node);
 
         const QString  parentPath = QFileInfo(dir).absolutePath();
-        DirectoryNode *parent     = byPath.value(parentPath);
+        FolderNode *parent     = byPath.value(parentPath);
         if (!parent) {
             delete node;
             out->root.reset();
@@ -113,7 +113,7 @@ bool scanFolder(const QString &rootPath, FolderTree *out, QString *error) {
     }
 
     for (auto it = filesByDir.begin(); it != filesByDir.end(); ++it) {
-        DirectoryNode *node = byPath.value(it.key());
+        FolderNode *node = byPath.value(it.key());
         if (node)
             node->files = std::move(it.value());
     }
@@ -121,4 +121,4 @@ bool scanFolder(const QString &rootPath, FolderTree *out, QString *error) {
     return true;
 }
 
-} // namespace catalog
+} // namespace library

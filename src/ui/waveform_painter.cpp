@@ -1,4 +1,4 @@
-#include "waveformrenderer.h"
+#include "waveform_painter.h"
 
 #include <QPainter>
 

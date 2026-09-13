@@ -9,11 +9,11 @@ class QTreeView;
 
 namespace ui {
 
-class FolderBrowser : public QWidget {
+class FolderTreeWidget : public QWidget {
     Q_OBJECT
 
   public:
-    explicit FolderBrowser(QWidget *parent = nullptr);
+    explicit FolderTreeWidget(QWidget *parent = nullptr);
 
     void setModel(QAbstractItemModel *model);
     void setCurrentIndex(const QModelIndex &index);

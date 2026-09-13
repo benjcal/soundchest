@@ -1,23 +1,23 @@
-#include "foldertreemodel.h"
+#include "folder_tree_widget_model.h"
 
 #include <QFileInfo>
 
 namespace ui {
 
-FolderTreeModel::FolderTreeModel(QObject *parent) : QAbstractItemModel(parent) {}
+FolderTreeWidgetModel::FolderTreeWidgetModel(QObject *parent) : QAbstractItemModel(parent) {}
 
-void FolderTreeModel::setTree(std::shared_ptr<const catalog::FolderTree> tree) {
+void FolderTreeWidgetModel::setFolder(std::shared_ptr<const library::Folder> folder) {
     beginResetModel();
-    m_tree = std::move(tree);
+    m_tree = std::move(folder);
     endResetModel();
 }
 
-const QVector<audio::AudioInfo> *FolderTreeModel::filesFor(const QModelIndex &index) const {
-    const catalog::DirectoryNode *node = nodeFor(index);
+const QVector<library::AudioFile> *FolderTreeWidgetModel::filesFor(const QModelIndex &index) const {
+    const library::FolderNode *node = nodeFor(index);
     return node ? &node->files : nullptr;
 }
 
-QModelIndex FolderTreeModel::index(int row, int column, const QModelIndex &parentIndex) const {
+QModelIndex FolderTreeWidgetModel::index(int row, int column, const QModelIndex &parentIndex) const {
     if (!m_tree || !m_tree->root || column != 0)
         return {};
 
@@ -27,47 +27,47 @@ QModelIndex FolderTreeModel::index(int row, int column, const QModelIndex &paren
         return createIndex(0, 0, m_tree->root.get());
     }
 
-    const catalog::DirectoryNode *parent = nodeFor(parentIndex);
+    const library::FolderNode *parent = nodeFor(parentIndex);
     if (!parent || row < 0 || row >= parent->children.size())
         return {};
 
     return createIndex(row, column, parent->children.at(row));
 }
 
-QModelIndex FolderTreeModel::parent(const QModelIndex &child) const {
+QModelIndex FolderTreeWidgetModel::parent(const QModelIndex &child) const {
     if (!child.isValid() || !m_tree || !m_tree->root)
         return {};
 
-    const catalog::DirectoryNode *node = nodeFor(child);
+    const library::FolderNode *node = nodeFor(child);
     if (!node || node == m_tree->root.get() || !node->parent)
         return {};
 
     if (node->parent == m_tree->root.get())
         return createIndex(0, 0, m_tree->root.get());
 
-    catalog::DirectoryNode *grandparent = node->parent->parent;
+    library::FolderNode *grandparent = node->parent->parent;
     const int               row         = grandparent->children.indexOf(node->parent);
 
     return createIndex(row, 0, node->parent);
 }
 
-int FolderTreeModel::rowCount(const QModelIndex &parentIndex) const {
+int FolderTreeWidgetModel::rowCount(const QModelIndex &parentIndex) const {
     if (!m_tree || !m_tree->root)
         return 0;
     if (!parentIndex.isValid())
         return 1;
 
-    const catalog::DirectoryNode *node = nodeFor(parentIndex);
+    const library::FolderNode *node = nodeFor(parentIndex);
     return node ? node->children.size() : 0;
 }
 
-int FolderTreeModel::columnCount(const QModelIndex &parent) const {
+int FolderTreeWidgetModel::columnCount(const QModelIndex &parent) const {
     Q_UNUSED(parent);
     return 1;
 }
 
-QVariant FolderTreeModel::data(const QModelIndex &index, int role) const {
-    const catalog::DirectoryNode *node = nodeFor(index);
+QVariant FolderTreeWidgetModel::data(const QModelIndex &index, int role) const {
+    const library::FolderNode *node = nodeFor(index);
     if (!node)
         return {};
 
@@ -81,10 +81,10 @@ QVariant FolderTreeModel::data(const QModelIndex &index, int role) const {
     return {};
 }
 
-catalog::DirectoryNode *FolderTreeModel::nodeFor(const QModelIndex &index) const {
+library::FolderNode *FolderTreeWidgetModel::nodeFor(const QModelIndex &index) const {
     if (!index.isValid() || !index.internalPointer())
         return nullptr;
-    return static_cast<catalog::DirectoryNode *>(index.internalPointer());
+    return static_cast<library::FolderNode *>(index.internalPointer());
 }
 
 } // namespace ui

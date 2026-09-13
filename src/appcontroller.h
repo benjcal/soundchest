@@ -3,22 +3,22 @@
 #include <QObject>
 #include <QString>
 
-#include "audio/audioinfo.h"
-#include "waveform/waveform.h"
+#include "library/audio_file.h"
+#include "waveform/peaks.h"
 
 namespace audio {
 class Player;
 } // namespace audio
 
 namespace waveform {
-class WaveformBuilder;
-class WaveformCache;
+class PeaksBuilder;
+class PeaksCache;
 } // namespace waveform
 
 namespace ui {
-class FileTableModel;
-class FolderTreeModel;
-class MainView;
+class FileTableWidgetModel;
+class FolderTreeWidgetModel;
+class Window;
 } // namespace ui
 
 class QModelIndex;
@@ -28,7 +28,7 @@ class AppController : public QObject {
     Q_OBJECT
 
   public:
-    AppController(ui::FolderTreeModel *folderModel, ui::FileTableModel *fileModel, ui::MainView *view,
+    AppController(ui::FolderTreeWidgetModel *folderModel, ui::FileTableWidgetModel *fileModel, ui::Window *view,
                   QObject *parent = nullptr);
 
     void start();
@@ -48,15 +48,15 @@ class AppController : public QObject {
     void requestVisibleWaveforms(int firstRow, int lastRow);
 
   private:
-    void onWaveformReady(const QString &filePath, waveform::WaveformData data);
+    void onWaveformReady(const QString &filePath, waveform::Peaks data);
     void updateProgress();
 
-    ui::FolderTreeModel       *m_folderTreeModel;
-    ui::FileTableModel        *m_fileTableModel;
-    ui::MainView              *m_view;
+    ui::FolderTreeWidgetModel       *m_folderTreeModel;
+    ui::FileTableWidgetModel        *m_fileTableModel;
+    ui::Window              *m_window;
     audio::Player             *m_player;
-    waveform::WaveformBuilder *m_waveformBuilder;
-    waveform::WaveformCache   *m_waveformCache;
+    waveform::PeaksBuilder *m_peaksBuilder;
+    waveform::PeaksCache    *m_peaksCache;
     QTimer                    *m_progressTimer;
     bool                       m_autoplay = false;
 };

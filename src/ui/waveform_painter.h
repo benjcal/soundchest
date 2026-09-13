@@ -7,7 +7,7 @@ class QPainter;
 
 namespace waveform {
 
-struct WaveformData;
+struct Peaks;
 
 qreal  barWidth(const QRectF &area, int columns);
 QRectF barRect(const QRectF &area, int column, qreal columnWidth, float min, float max);

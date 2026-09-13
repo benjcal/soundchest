@@ -1,6 +1,6 @@
-#include "waveformcache.h"
+#include "peaks_cache.h"
 
-#include "waveformbuilder.h"
+#include "builder.h"
 
 #include <QMetaObject>
 #include <QRunnable>
@@ -15,13 +15,13 @@ constexpr int previewColumns = 64;
 
 class BuildTask : public QRunnable {
   public:
-    BuildTask(WaveformCache *cache, QString filePath, int columnCount, int generation,
+    BuildTask(PeaksCache *cache, QString filePath, int columnCount, int generation,
               std::shared_ptr<std::atomic<int>> cancel)
         : m_cache(cache), m_filePath(std::move(filePath)), m_columnCount(columnCount), m_generation(generation),
           m_cancel(std::move(cancel)) {}
 
     void run() override {
-        WaveformData data = buildWaveform(m_filePath, m_columnCount, m_cancel.get(), m_generation);
+        Peaks data = buildPeaks(m_filePath, m_columnCount, m_cancel.get(), m_generation);
         QMetaObject::invokeMethod(
             m_cache,
             [cache = m_cache, filePath = m_filePath, data = std::move(data), generation = m_generation]() mutable {
@@ -31,7 +31,7 @@ class BuildTask : public QRunnable {
     }
 
   private:
-    WaveformCache                    *m_cache;
+    PeaksCache                    *m_cache;
     QString                           m_filePath;
     int                               m_columnCount;
     int                               m_generation;
@@ -40,18 +40,18 @@ class BuildTask : public QRunnable {
 
 } // namespace
 
-WaveformCache::WaveformCache(QObject *parent) : QObject(parent), m_cancel(std::make_shared<std::atomic<int>>(0)) {
+PeaksCache::PeaksCache(QObject *parent) : QObject(parent), m_cancel(std::make_shared<std::atomic<int>>(0)) {
     m_pool.setMaxThreadCount(4);
 }
 
-WaveformCache::~WaveformCache() {
+PeaksCache::~PeaksCache() {
     ++(*m_cancel);
     m_pool.waitForDone();
 }
 
-WaveformData WaveformCache::get(const QString &filePath) const { return m_cache.value(filePath); }
+Peaks PeaksCache::get(const QString &filePath) const { return m_cache.value(filePath); }
 
-void WaveformCache::request(const QString &filePath) {
+void PeaksCache::request(const QString &filePath) {
     if (filePath.isEmpty() || m_cache.contains(filePath) || m_pending.contains(filePath))
         return;
 
@@ -59,13 +59,13 @@ void WaveformCache::request(const QString &filePath) {
     m_pool.start(new BuildTask(this, filePath, previewColumns, m_cancel->load(), m_cancel));
 }
 
-void WaveformCache::clear() {
+void PeaksCache::clear() {
     ++(*m_cancel);
     m_cache.clear();
     m_pending.clear();
 }
 
-void WaveformCache::storeResult(const QString &filePath, WaveformData data, int generation) {
+void PeaksCache::storeResult(const QString &filePath, Peaks data, int generation) {
     m_pending.remove(filePath);
 
     if (generation != m_cancel->load())

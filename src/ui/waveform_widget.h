@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include "waveform/waveform.h"
+#include "waveform/peaks.h"
 
 namespace ui {
 
@@ -12,7 +12,7 @@ class WaveformWidget : public QWidget {
   public:
     explicit WaveformWidget(QWidget *parent = nullptr);
 
-    void setData(const waveform::WaveformData &data);
+    void setData(const waveform::Peaks &data);
     void clear();
     void setProgress(double fraction);
 
@@ -20,7 +20,7 @@ class WaveformWidget : public QWidget {
     void paintEvent(QPaintEvent *event) override;
 
   private:
-    waveform::WaveformData m_data;
+    waveform::Peaks m_data;
     double                 m_progress = 0.0;
 };
 

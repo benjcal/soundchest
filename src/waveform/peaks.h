@@ -5,7 +5,7 @@
 
 namespace waveform {
 
-struct WaveformData {
+struct Peaks {
     QVector<float> mins;
     QVector<float> maxs;
 
@@ -14,4 +14,4 @@ struct WaveformData {
 
 } // namespace waveform
 
-Q_DECLARE_METATYPE(waveform::WaveformData)
+Q_DECLARE_METATYPE(waveform::Peaks)

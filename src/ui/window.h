@@ -1,38 +1,38 @@
 #pragma once
 
-#include <QWidget>
+#include <QMainWindow>
 
-#include "audio/audioinfo.h"
-#include "waveform/waveform.h"
+#include "library/audio_file.h"
+#include "waveform/peaks.h"
 
 class QAbstractItemModel;
 class QModelIndex;
 
 namespace ui {
 
-class FileTable;
-class FolderBrowser;
+class FileTableWidget;
+class FolderTreeWidget;
 class HeaderBar;
-class TransportBar;
+class TransportControls;
 class WaveformWidget;
 
-class MainView : public QWidget {
+class Window : public QMainWindow {
     Q_OBJECT
 
   public:
-    explicit MainView(QWidget *parent = nullptr);
+    explicit Window(QWidget *parent = nullptr);
 
     void setFolderModel(QAbstractItemModel *model);
     void setFileModel(QAbstractItemModel *model);
     void selectDirectory(const QModelIndex &index);
 
     void showScanResult(const QString &rootPath, int fileCount);
-    void showFileInfo(const audio::AudioInfo &info);
+    void showAudioInfo(const library::AudioFile &info);
     void showError(const QString &message);
     void setControlsEnabled(bool enabled);
     void setVolume(int value);
     void clearWaveform();
-    void setWaveform(const waveform::WaveformData &data);
+    void setPeaks(const waveform::Peaks &peaks);
     void setProgress(double fraction);
     int  waveformWidth() const;
 
@@ -51,11 +51,11 @@ class MainView : public QWidget {
   private:
     void chooseFolder();
 
-    HeaderBar      *m_header;
-    WaveformWidget *m_waveform;
-    TransportBar   *m_transport;
-    FolderBrowser  *m_folderBrowser;
-    FileTable      *m_fileTable;
+    HeaderBar        *m_header;
+    WaveformWidget   *m_waveform;
+    TransportControls *m_transport;
+    FolderTreeWidget *m_folderTree;
+    FileTableWidget  *m_fileTable;
 };
 
 } // namespace ui

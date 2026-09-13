@@ -1,6 +1,6 @@
-#include "waveformwidget.h"
+#include "waveform_widget.h"
 
-#include "waveform/waveformrenderer.h"
+#include "ui/waveform_painter.h"
 
 #include <QPainter>
 
@@ -13,13 +13,13 @@ WaveformWidget::WaveformWidget(QWidget *parent) : QWidget(parent) {
     setMinimumHeight(160);
 }
 
-void WaveformWidget::setData(const waveform::WaveformData &data) {
+void WaveformWidget::setData(const waveform::Peaks &data) {
     m_data = data;
     update();
 }
 
 void WaveformWidget::clear() {
-    m_data     = waveform::WaveformData();
+    m_data     = waveform::Peaks();
     m_progress = 0.0;
     update();
 }
