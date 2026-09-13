@@ -8,7 +8,6 @@
 
 #include <QApplication>
 #include <QFileDialog>
-#include <QListView>
 #include <QModelIndex>
 #include <QSplitter>
 #include <QStatusBar>
@@ -52,21 +51,17 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
 
     setCentralWidget(central);
 
-    connect(m_header, &HeaderBar::openFolderRequested, this, &Window::chooseFolder);
-    connect(m_folderTree, &FolderTreeWidget::currentDirectoryChanged, this, &Window::directorySelected);
-    connect(m_fileTable, &FileTableWidget::currentFileChanged, this, &Window::fileSelected);
-    connect(m_fileTable, &FileTableWidget::visibleRowsChanged, this, &Window::visibleRowsChanged);
-    connect(m_transport, &TransportControls::playClicked, this, &Window::playClicked);
-    connect(m_transport, &TransportControls::stopClicked, this, &Window::stopClicked);
-    connect(m_transport, &TransportControls::loopToggled, this, &Window::loopToggled);
-    connect(m_transport, &TransportControls::volumeChanged, this, &Window::volumeChanged);
-    connect(m_transport, &TransportControls::autoplayChanged, this, &Window::autoplayChanged);
-    connect(this, &Window::statusMessage, this, [this](const QString &message) { statusBar()->showMessage(message); });
 }
 
-void Window::setFolderModel(QAbstractItemModel *model) { m_folderTree->setModel(model); }
+FileTableWidget *Window::fileTableWidget() const { return m_fileTable; }
 
-void Window::setFileModel(QAbstractItemModel *model) { m_fileTable->setModel(model); }
+FolderTreeWidget *Window::folderTreeWidget() const { return m_folderTree; }
+
+HeaderBar *Window::header() const { return m_header; }
+
+TransportControls *Window::transport() const { return m_transport; }
+
+WaveformWidget *Window::waveform() const { return m_waveform; }
 
 void Window::selectDirectory(const QModelIndex &index) {
     m_folderTree->setCurrentIndex(index);
@@ -74,53 +69,23 @@ void Window::selectDirectory(const QModelIndex &index) {
 }
 
 void Window::showScanResult(const QString &rootPath, int fileCount) {
-    emit statusMessage(QStringLiteral("%1 — %2 audio file(s)").arg(rootPath).arg(fileCount));
+    statusBar()->showMessage(QStringLiteral("%1 — %2 audio file(s)").arg(rootPath).arg(fileCount));
 }
 
 void Window::showAudioInfo(const library::AudioFile &info) {
-    emit statusMessage(QStringLiteral("%1 — %2 s, %3 kHz, %4, %5, %6 kbps")
-                           .arg(info.fileName, QString::number(info.durationSec, 'f', 2),
-                                QString::number(info.sampleRate / 1000.0, 'f', 1),
-                                info.channels == 2 ? QStringLiteral("stereo") : QStringLiteral("mono"), info.format,
-                                QString::number(info.bitRateKbps, 'f', 0)));
+    statusBar()->showMessage(QStringLiteral("%1 — %2 s, %3 kHz, %4, %5, %6 kbps")
+                                 .arg(info.fileName, QString::number(info.durationSec, 'f', 2),
+                                      QString::number(info.sampleRate / 1000.0, 'f', 1),
+                                      info.channels == 2 ? QStringLiteral("stereo") : QStringLiteral("mono"),
+                                      info.format, QString::number(info.bitRateKbps, 'f', 0)));
 }
 
-void Window::showError(const QString &message) { emit statusMessage(message); }
-
-void Window::setControlsEnabled(bool enabled) { m_transport->setControlsEnabled(enabled); }
-
-void Window::setVolume(int value) { m_transport->setVolume(value); }
-
-void Window::clearWaveform() { m_waveform->clear(); }
-
-void Window::setPeaks(const waveform::Peaks &peaks) { m_waveform->setData(peaks); }
+void Window::showError(const QString &message) { statusBar()->showMessage(message); }
 
 void Window::setProgress(double fraction) { m_waveform->setProgress(fraction); }
 
-int Window::waveformWidth() const { return m_waveform->width(); }
-
-void Window::chooseFolder() {
-    QFileDialog dialog(this, QStringLiteral("Open Folder"));
-    dialog.setFileMode(QFileDialog::Directory);
-    dialog.setOption(QFileDialog::ShowDirsOnly, true);
-
-    // Qlementine mis-sizes item views whose iconSize was never set (the dialog
-    // sidebar), causing its icons to overlap the labels. Give it an explicit size.
-    for (QListView *view : dialog.findChildren<QListView *>()) {
-        if (view->objectName() == QLatin1String("sidebar"))
-            view->setIconSize(QSize(16, 16));
-    }
-
-    if (dialog.exec() != QDialog::Accepted)
-        return;
-
-    const QStringList selected = dialog.selectedFiles();
-    if (selected.isEmpty() || selected.first().isEmpty())
-        return;
-
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    emit folderChosen(selected.first());
-    QApplication::restoreOverrideCursor();
+QString Window::chooseFolderPath() {
+    return QFileDialog::getExistingDirectory(this, QStringLiteral("Open Folder"), {}, QFileDialog::ShowDirsOnly);
 }
 
 } // namespace ui

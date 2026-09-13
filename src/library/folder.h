@@ -19,9 +19,7 @@ struct FolderNode {
 
 struct Folder {
     std::unique_ptr<FolderNode> root;
-    int                            fileCount() const;
+    int                         fileCount() const;
 };
-
-bool scan(const QString &rootPath, Folder *out, QString *error = nullptr);
 
 } // namespace library

@@ -1,7 +1,5 @@
 #include "file_table_widget_model.h"
 
-#include "waveform/peaks_cache.h"
-
 #include <QVariant>
 
 namespace ui {
@@ -46,31 +44,16 @@ void FileTableWidgetModel::setFiles(QVector<library::AudioFile> files) {
     endResetModel();
 }
 
-void FileTableWidgetModel::setPeaksCache(waveform::PeaksCache *cache) {
-    if (m_waveformCache == cache)
-        return;
-
-    if (m_waveformCache)
-        disconnect(m_waveformCache, nullptr, this, nullptr);
-
-    m_waveformCache = cache;
-
-    if (m_waveformCache) {
-        connect(m_waveformCache, &waveform::PeaksCache::ready, this, [this](const QString &filePath) {
-            for (int row = 0; row < m_files.size(); ++row) {
-                if (m_files.at(row).filePath != filePath)
-                    continue;
-                const QModelIndex changed = index(row, Waveform);
-                emit              dataChanged(changed, changed, {WaveformRole});
-            }
-        });
-    }
-}
-
-library::AudioFile FileTableWidgetModel::audioInfo(int row) const {
+library::AudioFile FileTableWidgetModel::audioFile(int row) const {
     if (row < 0 || row >= m_files.size())
         return {};
     return m_files.at(row);
+}
+
+QString FileTableWidgetModel::filePath(int row) const {
+    if (row < 0 || row >= m_files.size())
+        return {};
+    return m_files.at(row).filePath;
 }
 
 int FileTableWidgetModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : m_files.size(); }
@@ -83,16 +66,8 @@ QVariant FileTableWidgetModel::data(const QModelIndex &index, int role) const {
 
     const library::AudioFile &info = m_files.at(index.row());
 
-    if (role == WaveformRole) {
-        if (!m_waveformCache || info.filePath.isEmpty())
-            return {};
-        return QVariant::fromValue(m_waveformCache->get(info.filePath));
-    }
-
     if (role == Qt::DisplayRole) {
         switch (index.column()) {
-        case Waveform:
-            return {};
         case Name:
             return info.fileName;
         case Duration:
@@ -120,8 +95,6 @@ QVariant FileTableWidgetModel::headerData(int section, Qt::Orientation orientati
         return {};
 
     switch (section) {
-    case Waveform:
-        return {};
     case Name:
         return QStringLiteral("Name");
     case Duration:

@@ -20,6 +20,7 @@ class TransportControls : public QWidget {
 
     void setControlsEnabled(bool enabled);
     void setVolume(int value);
+    bool autoplay() const;
 
   signals:
     void playClicked();

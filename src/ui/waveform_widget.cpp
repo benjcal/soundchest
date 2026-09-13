@@ -1,6 +1,7 @@
 #include "waveform_widget.h"
 
-#include "ui/waveform_painter.h"
+#include "ui/theme.h"
+#include "ui/waveform_renderer.h"
 
 #include <QPainter>
 
@@ -34,35 +35,39 @@ void WaveformWidget::setProgress(double fraction) {
 
 void WaveformWidget::paintEvent(QPaintEvent *) {
     QPainter painter(this);
-    painter.fillRect(rect(), palette().color(QPalette::Window));
+    painter.fillRect(rect(), theme::workspaceBackground());
 
-    const QRectF area = rect();
+    painter.setPen(theme::border());
+    painter.drawLine(rect().topLeft(), rect().topRight());
+
+    const QRectF area = rect().adjusted(0, 1, 0, 0);
 
     if (!m_data.valid()) {
         painter.setPen(palette().color(QPalette::PlaceholderText));
-        painter.drawText(rect(), Qt::AlignCenter, QStringLiteral("Select a file to view its waveform"));
+        painter.drawText(area, Qt::AlignCenter, QStringLiteral("Select a file to view its waveform"));
         return;
     }
 
-    const QColor played   = palette().color(QPalette::WindowText);
-    QColor       unplayed = palette().color(QPalette::Highlight);
-    unplayed.setAlpha(150);
+    const QColor wave = theme::waveformColor();
 
-    const int   columns     = m_data.mins.size();
-    const qreal columnWidth = waveform::barWidth(area, columns);
-    const qreal playX       = area.width() * m_progress;
+    QColor played = wave;
+    played.setAlphaF(0.85f);
+    QColor unplayed = wave;
+    unplayed.setAlphaF(0.55f);
 
-    painter.setPen(Qt::NoPen);
-    for (int i = 0; i < columns; ++i) {
-        const QRectF bar = waveform::barRect(area, i, columnWidth, m_data.mins.at(i), m_data.maxs.at(i));
-        painter.fillRect(bar, bar.left() < playX ? played : unplayed);
-    }
-
-    waveform::paintMidline(&painter, area, palette().color(QPalette::Mid));
+    ui::paintWaveform(&painter, area, m_data, played, unplayed, m_progress);
 
     if (m_progress > 0.0) {
-        painter.setPen(QPen(palette().color(QPalette::WindowText), 1));
-        painter.drawLine(QPointF(playX, 0), QPointF(playX, height()));
+        const qreal playX = area.left() + area.width() * m_progress;
+
+        QColor tint = wave;
+        tint.setAlphaF(0.1f);
+        painter.fillRect(QRectF(area.left(), area.top(), playX - area.left(), area.height()), tint);
+
+        QColor head = wave;
+        head.setAlphaF(0.85f);
+        painter.setRenderHint(QPainter::Antialiasing, false);
+        painter.fillRect(QRectF(playX - 1.0, area.top(), 2.0, area.height()), head);
     }
 }
 

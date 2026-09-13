@@ -3,14 +3,10 @@
 #include <QObject>
 #include <QString>
 
-#include <memory>
-
-struct ma_engine;
-struct ma_sound;
+class QAudioOutput;
+class QMediaPlayer;
 
 namespace audio {
-
-class SndFileDataSource;
 
 class Player : public QObject {
     Q_OBJECT
@@ -19,8 +15,9 @@ class Player : public QObject {
     explicit Player(QObject *parent = nullptr);
     ~Player() override;
 
+    // Starts loading the file. Returns false when the path is empty. Loading
+    // and playback errors are reported through loadFailed().
     bool open(const QString &filePath);
-    void close();
 
     void play();
     void stop();
@@ -33,22 +30,16 @@ class Player : public QObject {
     double lengthSec() const;
 
     QString filePath() const;
-    QString errorString() const;
+
+  signals:
+    void loadFailed(const QString &message);
 
   private:
-    void setVolume(float linear);
-
-    std::unique_ptr<ma_engine>         m_engine;
-    std::unique_ptr<ma_sound>          m_sound;
-    std::unique_ptr<SndFileDataSource> m_dataSource;
-    bool                               m_engineReady = false;
-    bool                               m_loaded      = false;
-    bool                               m_looping     = false;
-    float                              m_volume      = 0.8f;
-    double                             m_lengthSec   = 0.0;
-    int                                m_sampleRate  = 0;
-    QString                            m_filePath;
-    QString                            m_error;
+    QMediaPlayer *m_media       = nullptr;
+    QAudioOutput *m_audioOutput = nullptr;
+    QString       m_filePath;
+    bool          m_looping     = false;
+    int           m_volume      = 80;
 };
 
 } // namespace audio

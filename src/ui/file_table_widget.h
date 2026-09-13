@@ -14,14 +14,12 @@ class FileTableWidget : public QWidget {
     explicit FileTableWidget(QWidget *parent = nullptr);
 
     void setModel(QAbstractItemModel *model);
+    void setCurrentRow(int row);
 
   signals:
     void currentFileChanged(int row);
-    void visibleRowsChanged(int firstRow, int lastRow);
 
   private:
-    void emitVisibleRows();
-
     QTableView *m_table;
 };
 

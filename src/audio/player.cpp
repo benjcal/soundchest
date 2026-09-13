@@ -1,115 +1,121 @@
 #include "player.h"
 
-#include "sndfiledatasource.h"
+#include <QAudioOutput>
+#include <QMediaPlayer>
+#include <QUrl>
 
-#include "miniaudio.h"
+#include <algorithm>
+
+#ifdef Q_OS_LINUX
+#include <dlfcn.h>
+#include <link.h>
+
+#include <cstring>
+#endif
 
 namespace audio {
 
-Player::Player(QObject *parent)
-    : QObject(parent), m_engine(std::make_unique<ma_engine>()), m_sound(std::make_unique<ma_sound>()) {
-    const ma_result result = ma_engine_init(nullptr, m_engine.get());
-    m_engineReady          = result == MA_SUCCESS;
-    if (!m_engineReady)
-        m_error = QString::fromUtf8(ma_result_description(result));
-}
+namespace {
 
-Player::~Player() {
-    close();
-    if (m_engineReady)
-        ma_engine_uninit(m_engine.get());
-}
+#ifdef Q_OS_LINUX
 
-bool Player::open(const QString &filePath) {
-    if (!m_engineReady) {
-        m_error = QStringLiteral("audio engine failed to initialize");
+// Qt's FFmpeg plugin sends decoder warnings (e.g. Vorbis timestamp warnings)
+// straight to stderr. Keep errors, drop the rest. The plugin is loaded lazily
+// and with RTLD_LOCAL, so find the already loaded libavutil and resolve
+// av_log_set_level from it.
+bool applyDecoderWarningSilence() {
+    void *handle = nullptr;
+    dl_iterate_phdr(
+        [](dl_phdr_info *info, size_t, void *data) -> int {
+            if (!info->dlpi_name || !std::strstr(info->dlpi_name, "libavutil.so"))
+                return 0;
+            *static_cast<void **>(data) = dlopen(info->dlpi_name, RTLD_NOW | RTLD_NOLOAD);
+            return *static_cast<void **>(data) ? 1 : 0;
+        },
+        &handle);
+
+    if (!handle)
         return false;
-    }
 
-    close();
-
-    auto    dataSource = std::make_unique<SndFileDataSource>();
-    QString error;
-    if (!dataSource->open(filePath, &error)) {
-        m_error = error;
+    void *symbol = dlsym(handle, "av_log_set_level");
+    if (!symbol)
         return false;
-    }
 
-    const ma_result result =
-        ma_sound_init_from_data_source(m_engine.get(), dataSource->dataSource(), 0, nullptr, m_sound.get());
-    if (result != MA_SUCCESS) {
-        m_error = QString::fromUtf8(ma_result_description(result));
-        return false;
-    }
-
-    m_dataSource = std::move(dataSource);
-    m_filePath   = filePath;
-    m_loaded     = true;
-    m_error.clear();
-
-    m_sampleRate = static_cast<int>(m_dataSource->sampleRate());
-    m_lengthSec  = m_sampleRate > 0 ? static_cast<double>(m_dataSource->lengthFrames()) / m_sampleRate : 0.0;
-
-    ma_sound_set_looping(m_sound.get(), m_looping ? MA_TRUE : MA_FALSE);
-    ma_sound_set_volume(m_sound.get(), m_volume);
-
+    constexpr int avLogError = 16;
+    reinterpret_cast<void (*)(int)>(symbol)(avLogError);
     return true;
 }
 
-void Player::close() {
-    if (m_loaded) {
-        ma_sound_uninit(m_sound.get());
-        m_loaded = false;
-    }
-    m_dataSource.reset();
-    m_filePath.clear();
-    m_lengthSec  = 0.0;
-    m_sampleRate = 0;
-    m_error.clear();
+void silenceDecoderWarnings() {
+    if (qEnvironmentVariableIsSet("QT_FFMPEG_DEBUG"))
+        return;
+
+    static bool applied = false;
+    if (!applied)
+        applied = applyDecoderWarningSilence();
+}
+
+#else
+
+void silenceDecoderWarnings() {}
+
+#endif
+
+} // namespace
+
+Player::Player(QObject *parent)
+    : QObject(parent), m_media(new QMediaPlayer(this)), m_audioOutput(new QAudioOutput(this)) {
+    m_media->setAudioOutput(m_audioOutput);
+    m_audioOutput->setVolume(m_volume / 100.0f);
+
+    connect(m_media, &QMediaPlayer::errorOccurred, this,
+            [this](QMediaPlayer::Error, const QString &errorString) { emit loadFailed(errorString); });
+}
+
+Player::~Player() = default;
+
+bool Player::open(const QString &filePath) {
+    if (filePath.isEmpty())
+        return false;
+
+    m_filePath = filePath;
+    m_media->setSource(QUrl::fromLocalFile(filePath));
+    m_media->setLoops(m_looping ? QMediaPlayer::Infinite : 1);
+    silenceDecoderWarnings();
+    return true;
 }
 
 void Player::play() {
-    if (m_loaded)
-        ma_sound_start(m_sound.get());
+    if (!m_filePath.isEmpty())
+        m_media->play();
 }
 
-void Player::stop() {
-    if (!m_loaded)
-        return;
-    ma_sound_stop(m_sound.get());
-    ma_sound_seek_to_pcm_frame(m_sound.get(), 0);
-}
+void Player::stop() { m_media->stop(); }
 
 void Player::setLooping(bool enabled) {
     m_looping = enabled;
-    if (m_loaded)
-        ma_sound_set_looping(m_sound.get(), enabled ? MA_TRUE : MA_FALSE);
+    m_media->setLoops(enabled ? QMediaPlayer::Infinite : 1);
 }
 
-void Player::setVolume(float linear) {
-    m_volume = qBound(0.0f, linear, 1.0f);
-    if (m_loaded)
-        ma_sound_set_volume(m_sound.get(), m_volume);
+void Player::setVolumePercent(int percent) {
+    m_volume = std::clamp(percent, 0, 100);
+    m_audioOutput->setVolume(m_volume / 100.0f);
 }
 
-void Player::setVolumePercent(int percent) { setVolume(percent / 100.0f); }
+int Player::volumePercent() const { return m_volume; }
 
-int Player::volumePercent() const { return qRound(m_volume * 100.0f); }
-
-bool Player::isPlaying() const { return m_loaded && ma_sound_is_playing(m_sound.get()) != MA_FALSE; }
+bool Player::isPlaying() const { return m_media->playbackState() == QMediaPlayer::PlayingState; }
 
 double Player::positionSec() const {
-    if (!m_loaded)
-        return 0.0;
-    ma_uint64 cursor = 0;
-    ma_sound_get_cursor_in_pcm_frames(m_sound.get(), &cursor);
-    return m_sampleRate > 0 ? static_cast<double>(cursor) / m_sampleRate : 0.0;
+    const qint64 position = m_media->position();
+    return position > 0 ? position / 1000.0 : 0.0;
 }
 
-double Player::lengthSec() const { return m_lengthSec; }
+double Player::lengthSec() const {
+    const qint64 duration = m_media->duration();
+    return duration > 0 ? duration / 1000.0 : 0.0;
+}
 
 QString Player::filePath() const { return m_filePath; }
-
-QString Player::errorString() const { return m_error; }
 
 } // namespace audio

@@ -15,6 +15,4 @@ struct AudioFile {
     double  bitRateKbps   = 0.0;
 };
 
-bool readAudioFile(const QString &filePath, AudioFile *out, QString *error = nullptr);
-
 } // namespace library

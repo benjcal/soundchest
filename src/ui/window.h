@@ -3,9 +3,7 @@
 #include <QMainWindow>
 
 #include "library/audio_file.h"
-#include "waveform/peaks.h"
 
-class QAbstractItemModel;
 class QModelIndex;
 
 namespace ui {
@@ -22,40 +20,25 @@ class Window : public QMainWindow {
   public:
     explicit Window(QWidget *parent = nullptr);
 
-    void setFolderModel(QAbstractItemModel *model);
-    void setFileModel(QAbstractItemModel *model);
-    void selectDirectory(const QModelIndex &index);
+    FileTableWidget   *fileTableWidget() const;
+    FolderTreeWidget  *folderTreeWidget() const;
+    HeaderBar         *header() const;
+    TransportControls *transport() const;
+    WaveformWidget    *waveform() const;
 
-    void showScanResult(const QString &rootPath, int fileCount);
-    void showAudioInfo(const library::AudioFile &info);
-    void showError(const QString &message);
-    void setControlsEnabled(bool enabled);
-    void setVolume(int value);
-    void clearWaveform();
-    void setPeaks(const waveform::Peaks &peaks);
-    void setProgress(double fraction);
-    int  waveformWidth() const;
-
-  signals:
-    void folderChosen(const QString &path);
-    void directorySelected(const QModelIndex &index);
-    void fileSelected(int row);
-    void visibleRowsChanged(int firstRow, int lastRow);
-    void playClicked();
-    void stopClicked();
-    void loopToggled(bool enabled);
-    void volumeChanged(int value);
-    void autoplayChanged(bool enabled);
-    void statusMessage(const QString &message);
+    void    selectDirectory(const QModelIndex &index);
+    QString chooseFolderPath();
+    void    showScanResult(const QString &rootPath, int fileCount);
+    void    showAudioInfo(const library::AudioFile &info);
+    void    showError(const QString &message);
+    void    setProgress(double fraction);
 
   private:
-    void chooseFolder();
-
-    HeaderBar        *m_header;
-    WaveformWidget   *m_waveform;
+    HeaderBar         *m_header;
+    WaveformWidget    *m_waveform;
     TransportControls *m_transport;
-    FolderTreeWidget *m_folderTree;
-    FileTableWidget  *m_fileTable;
+    FolderTreeWidget  *m_folderTree;
+    FileTableWidget   *m_fileTable;
 };
 
 } // namespace ui

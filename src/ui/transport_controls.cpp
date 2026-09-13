@@ -81,4 +81,6 @@ void TransportControls::setControlsEnabled(bool enabled) {
 
 void TransportControls::setVolume(int value) { m_volumeSlider->setValue(value); }
 
+bool TransportControls::autoplay() const { return m_autoplaySwitch->isChecked(); }
+
 } // namespace ui
