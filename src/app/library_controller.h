@@ -64,9 +64,9 @@ class LibraryController : public QObject {
     void applyFolder(const std::shared_ptr<const library::Folder> &folder);
     void loadDirectory(const QModelIndex &index);
 
-    ui::Window                *m_window;
-    ui::FolderTreeWidgetModel *m_folderModel;
-    ui::FileTableWidgetModel  *m_fileModel;
+    ui::Window                 *m_window;
+    ui::FolderTreeWidgetModel  *m_folderModel;
+    ui::FileTableWidgetModel   *m_fileModel;
     QFutureWatcher<ScanOutcome> m_scanWatcher;
 };
 
