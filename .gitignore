@@ -1,3 +1,6 @@
 build/
-build-release/
+build-*/
 .cache/
+dist/
+*.AppImage
+.DS_Store
