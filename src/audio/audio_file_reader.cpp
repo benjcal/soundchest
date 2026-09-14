@@ -19,9 +19,8 @@ QString containerLabel(int sfFormat) {
     case SF_FORMAT_FLAC:
         return QStringLiteral("FLAC");
     case SF_FORMAT_OGG:
-        return QStringLiteral("OGG");
-    case SF_FORMAT_OPUS:
-        return QStringLiteral("Opus");
+        // Opus is a subtype of the Ogg container, not a top-level format.
+        return (sfFormat & SF_FORMAT_SUBMASK) == SF_FORMAT_OPUS ? QStringLiteral("Opus") : QStringLiteral("OGG");
     case SF_FORMAT_MPEG:
         return QStringLiteral("MP3");
     case SF_FORMAT_CAF:
