@@ -46,7 +46,10 @@ QModelIndex FolderTreeWidgetModel::parent(const QModelIndex &child) const {
         return createIndex(0, 0, m_tree->root.get());
 
     library::FolderNode *grandparent = node->parent->parent;
-    const int               row         = grandparent->children.indexOf(node->parent);
+    if (!grandparent)
+        return {};
+
+    const int row = grandparent->children.indexOf(node->parent);
 
     return createIndex(row, 0, node->parent);
 }

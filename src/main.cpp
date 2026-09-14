@@ -1,9 +1,13 @@
+#include "analysis/sound_analyzer.h"
+#include "app/analysis_controller.h"
+#include "app/export_controller.h"
 #include "app/library_controller.h"
 #include "app/playback_controller.h"
 #include "app/waveform_controller.h"
 #include "audio/player.h"
 #include "ui/file_table_widget_model.h"
 #include "ui/folder_tree_widget_model.h"
+#include "ui/style.h"
 #include "ui/window.h"
 #include "waveform/peaks_builder.h"
 
@@ -11,7 +15,6 @@
 #include <QLoggingCategory>
 
 #include <oclero/qlementine/resources/ResourceInitialization.hpp>
-#include <oclero/qlementine/style/QlementineStyle.hpp>
 
 int main(int argc, char *argv[]) {
 #ifdef Q_OS_LINUX
@@ -40,19 +43,22 @@ int main(int argc, char *argv[]) {
 
     oclero::qlementine::resources::initializeResources();
 
-    auto *style = new oclero::qlementine::QlementineStyle;
+    auto *style = new ui::Style;
     QApplication::setStyle(style);
     style->setThemeJsonPath(QStringLiteral(":/themes/gruvbox.json"));
 
-    ui::Window               window;
+    ui::Window                window;
     ui::FolderTreeWidgetModel folderModel;
     ui::FileTableWidgetModel  fileModel;
     audio::Player             player;
     waveform::PeaksBuilder    peaksBuilder;
+    analysis::SoundAnalyzer   soundAnalyzer;
 
-    app::LibraryController libraryController(&window, &folderModel, &fileModel);
+    app::LibraryController  libraryController(&window, &folderModel, &fileModel);
     app::WaveformController waveformController(&window, &peaksBuilder);
     app::PlaybackController playbackController(&window, &player);
+    app::AnalysisController analysisController(&window, &soundAnalyzer);
+    app::ExportController   exportController(&window, window.fileTable());
 
     QObject::connect(&libraryController, &app::LibraryController::soundsShown, &waveformController,
                      &app::WaveformController::onSoundsShown);
@@ -60,6 +66,10 @@ int main(int argc, char *argv[]) {
                      &app::WaveformController::onSoundSelected);
     QObject::connect(&libraryController, &app::LibraryController::soundSelected, &playbackController,
                      &app::PlaybackController::onSoundSelected);
+    QObject::connect(&libraryController, &app::LibraryController::soundSelected, &analysisController,
+                     &app::AnalysisController::onSoundSelected);
+    QObject::connect(&libraryController, &app::LibraryController::soundActivated, &playbackController,
+                     &app::PlaybackController::onSoundActivated);
 
     window.show();
     return app.exec();

@@ -25,11 +25,19 @@ const QSet<QString> &audioExtensions() {
     return extensions;
 }
 
-QStringList sortedByName(const QStringList &names) {
-    QStringList result = names;
-    QCollator   collator;
-    collator.setNumericMode(true);
-    std::sort(result.begin(), result.end(), collator);
+const QCollator &nameCollator() {
+    static const QCollator collator = [] {
+        QCollator result;
+        result.setNumericMode(true);
+        return result;
+    }();
+    return collator;
+}
+
+QStringList sortedByPath(const QStringList &paths) {
+    QStringList result = paths;
+    std::sort(result.begin(), result.end(),
+              [](const QString &a, const QString &b) { return nameCollator().compare(a, b) < 0; });
     return result;
 }
 
@@ -40,14 +48,17 @@ bool readAudioFile(const QString &filePath, AudioFile *out) {
 
     const QFileInfo fileInfo(filePath);
 
-    out->fileName      = fileInfo.fileName();
-    out->filePath      = filePath;
-    out->durationSec   = reader.durationSec();
-    out->sampleRate    = reader.sampleRate();
-    out->channels      = reader.channels();
-    out->format        = reader.formatLabel();
-    out->fileSizeBytes = fileInfo.size();
-    out->bitRateKbps   = out->durationSec > 0.0 ? out->fileSizeBytes * 8.0 / out->durationSec / 1000.0 : 0.0;
+    out->fileName    = fileInfo.fileName();
+    out->filePath    = filePath;
+    out->durationSec = reader.durationSec();
+    out->sampleRate  = reader.sampleRate();
+    out->channels    = reader.channels();
+    out->format      = reader.formatLabel();
+
+    // Average bit rate derived from the file size; for uncompressed formats
+    // this is the raw PCM rate.
+    const qint64 fileSizeBytes = fileInfo.size();
+    out->bitRateKbps           = out->durationSec > 0.0 ? fileSizeBytes * 8.0 / out->durationSec / 1000.0 : 0.0;
     return true;
 }
 
@@ -86,18 +97,21 @@ std::shared_ptr<const Folder> AudioLibraryScanner::scan(const QString &rootPath,
     }
 
     for (QVector<AudioFile> &files : filesByDir)
-        std::sort(files.begin(), files.end(),
-                  [](const AudioFile &a, const AudioFile &b) { return a.fileName.localeAwareCompare(b.fileName) < 0; });
+        std::sort(files.begin(), files.end(), [](const AudioFile &a, const AudioFile &b) {
+            return nameCollator().compare(a.fileName, b.fileName) < 0;
+        });
 
-    directories = sortedByName(directories);
+    directories = sortedByPath(directories);
 
-    auto folder       = std::make_shared<Folder>();
-    folder->root      = std::make_unique<FolderNode>();
+    auto folder        = std::make_shared<Folder>();
+    folder->root       = std::make_unique<FolderNode>();
     folder->root->path = root;
 
     QHash<QString, FolderNode *> byPath;
     byPath.insert(root, folder->root.get());
 
+    // The sorted list is parent-before-child: a parent's absolute path is a
+    // strict prefix of every descendant's path, so byPath always has the parent.
     for (const QString &dir : directories) {
         auto *node = new FolderNode;
         node->path = dir;

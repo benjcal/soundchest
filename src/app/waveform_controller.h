@@ -31,7 +31,7 @@ class WaveformController : public QObject {
   private:
     ui::Window             *m_window;
     waveform::PeaksBuilder *m_peaksBuilder;
-    QString                 m_currentSound;
+    QString                 m_currentFilePath;
 };
 
 } // namespace app

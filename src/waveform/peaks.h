@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QMetaType>
 #include <QVector>
 
 namespace waveform {
@@ -13,5 +12,3 @@ struct Peaks {
 };
 
 } // namespace waveform
-
-Q_DECLARE_METATYPE(waveform::Peaks)

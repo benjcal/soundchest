@@ -14,13 +14,16 @@ WaveformController::WaveformController(ui::Window *window, waveform::PeaksBuilde
 }
 
 void WaveformController::onSoundsShown() {
-    m_currentSound.clear();
+    m_currentFilePath.clear();
     m_window->waveform()->clear();
+
+    // Folder changed: cancel in-flight builds and drop cached peaks so the
+    // previous folder's waveforms cannot reappear.
     m_peaksBuilder->clear();
 }
 
 void WaveformController::onSoundSelected(const library::AudioFile &file) {
-    m_currentSound = file.filePath;
+    m_currentFilePath = file.filePath;
     m_window->waveform()->clear();
 
     // request() is a no-op when peaks are already cached, so show them now.
@@ -28,12 +31,13 @@ void WaveformController::onSoundSelected(const library::AudioFile &file) {
     if (cached.valid())
         m_window->waveform()->setData(cached);
 
-    const int columns = std::max(1, qRound(m_window->waveform()->width() * m_window->waveform()->devicePixelRatioF()));
-    m_peaksBuilder->request(file.filePath, columns);
+    const int pixelColumns =
+        std::max(1, qRound(m_window->waveform()->width() * m_window->waveform()->devicePixelRatioF()));
+    m_peaksBuilder->request(file.filePath, pixelColumns);
 }
 
 void WaveformController::onPeaksReady(const QString &filePath) {
-    if (filePath != m_currentSound)
+    if (filePath != m_currentFilePath)
         return;
 
     const waveform::Peaks peaks = m_peaksBuilder->peaks(filePath);

@@ -1,5 +1,7 @@
+#include "analysis/sound_analyzer.h"
 #include "audio/audio_file_reader.h"
 #include "library/audio_library_scanner.h"
+#include "library/file_exporter.h"
 #include "library/folder.h"
 #include "waveform/peaks_builder.h"
 
@@ -134,6 +136,57 @@ int main(int argc, char **argv) {
         });
 
         builder.request(wavPath, 64);
+        app.exec();
+    }
+
+    // library::copyFiles
+    {
+        const QString          exportDir = temp.filePath(QStringLiteral("export"));
+        const QVector<QString> sources{wavPath};
+
+        const library::ExportResult first = library::copyFiles(sources, exportDir, library::CollisionPolicy::Rename);
+        check(first.copied == 1 && first.failed == 0, "exporter copies a file");
+        check(QFile::exists(QDir(exportDir).filePath(QStringLiteral("sine.wav"))), "exporter keeps the original name");
+
+        const library::ExportResult second = library::copyFiles(sources, exportDir, library::CollisionPolicy::Rename);
+        check(second.copied == 1, "exporter copies a second time");
+        check(QFile::exists(QDir(exportDir).filePath(QStringLiteral("sine (2).wav"))), "exporter renames collisions");
+
+        const library::ExportResult skipped = library::copyFiles(sources, exportDir, library::CollisionPolicy::Skip);
+        check(skipped.skipped == 1 && skipped.copied == 0, "exporter can skip collisions");
+
+        const library::ExportResult overwritten =
+            library::copyFiles(sources, exportDir, library::CollisionPolicy::Overwrite);
+        check(overwritten.copied == 1 && overwritten.failed == 0, "exporter can overwrite collisions");
+
+        const library::ExportResult missing =
+            library::copyFiles({temp.filePath(QStringLiteral("ghost.wav"))}, exportDir, library::CollisionPolicy::Rename);
+        check(missing.failed == 1 && missing.errors.size() == 1, "exporter reports missing sources");
+    }
+
+    // analysis::SoundAnalyzer
+    {
+        analysis::SoundAnalyzer analyzer;
+        bool                    finished = false;
+
+        QObject::connect(&analyzer, &analysis::SoundAnalyzer::ready, &app, [&](const QString &filePath) {
+            const analysis::SoundStats stats = analyzer.stats(filePath);
+            check(stats.valid, "analyzer returns valid stats");
+            check(std::abs(stats.samplePeakDbfs - (-6.02)) < 0.5, "analyzer sample peak is near -6 dBFS");
+            check(std::abs(stats.truePeakDbtp - (-6.02)) < 0.5, "analyzer true peak is near -6 dBTP");
+            check(std::abs(stats.rmsDbfs - (-9.03)) < 0.3, "analyzer RMS is near -9 dBFS");
+            check(std::abs(stats.lufs - (-9.72)) < 0.5, "analyzer LUFS is near -9.7 LUFS");
+            finished = true;
+            app.quit();
+        });
+
+        QTimer::singleShot(3000, &app, [&] {
+            if (!finished)
+                check(false, "analyzer finished in time");
+            app.quit();
+        });
+
+        analyzer.request(wavPath);
         app.exec();
     }
 

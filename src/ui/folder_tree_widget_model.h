@@ -14,7 +14,7 @@ class FolderTreeWidgetModel : public QAbstractItemModel {
   public:
     explicit FolderTreeWidgetModel(QObject *parent = nullptr);
 
-    void                             setFolder(std::shared_ptr<const library::Folder> folder);
+    void                               setFolder(std::shared_ptr<const library::Folder> folder);
     const QVector<library::AudioFile> *filesFor(const QModelIndex &index) const;
 
     QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;

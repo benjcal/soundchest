@@ -4,15 +4,13 @@
 
 #include <oclero/qlementine/style/QlementineStyle.hpp>
 
-namespace {
+namespace ui::theme {
 
+// These helpers read from the qlementine style when it is active. The literal
+// fallbacks are gruvbox values, used only before the style is installed.
 oclero::qlementine::QlementineStyle *qlementineStyle() {
     return qobject_cast<oclero::qlementine::QlementineStyle *>(qApp->style());
 }
-
-} // namespace
-
-namespace theme {
 
 QColor workspaceBackground() {
     if (auto *style = qlementineStyle())
@@ -32,4 +30,4 @@ QColor waveformColor() {
     return QColor(0xeb, 0xdb, 0xb2);
 }
 
-} // namespace theme
+} // namespace ui::theme

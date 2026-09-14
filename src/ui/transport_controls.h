@@ -26,15 +26,17 @@ class TransportControls : public QWidget {
     void playClicked();
     void stopClicked();
     void loopToggled(bool enabled);
-    void autoplayChanged(bool enabled);
     void volumeChanged(int value);
 
   private:
+    void updateVolumeIcon();
+
     QToolButton                *m_playButton;
     QToolButton                *m_stopButton;
     QToolButton                *m_loopButton;
     oclero::qlementine::Switch *m_autoplaySwitch;
     QSlider                    *m_volumeSlider;
+    QLabel                     *m_volumeIcon;
 };
 
 } // namespace ui

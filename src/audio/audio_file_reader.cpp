@@ -56,20 +56,15 @@ int bitDepth(int sfFormat) {
 
 AudioFileReader::~AudioFileReader() { close(); }
 
-bool AudioFileReader::open(const QString &filePath, QString *error) {
+bool AudioFileReader::open(const QString &filePath) {
     close();
 
     SF_INFO info;
     std::memset(&info, 0, sizeof(info));
 
     m_sf = sf_open(filePath.toUtf8().constData(), SFM_READ, &info);
-    if (!m_sf) {
-        m_error = QString::fromUtf8(sf_strerror(nullptr));
-        if (error)
-            *error = m_error;
+    if (!m_sf)
         return false;
-    }
-    m_error.clear();
 
     m_sampleRate = info.samplerate;
     m_channels   = info.channels;
@@ -87,7 +82,6 @@ void AudioFileReader::close() {
     m_channels   = 0;
     m_frameCount = 0;
     m_format     = 0;
-    m_error.clear();
 }
 
 QString AudioFileReader::formatLabel() const {
@@ -105,13 +99,6 @@ qint64 AudioFileReader::readFrames(float *interleaved, qint64 frames) {
         return 0;
     const sf_count_t read = sf_readf_float(m_sf, interleaved, static_cast<sf_count_t>(frames));
     return read < 0 ? 0 : static_cast<qint64>(read);
-}
-
-qint64 AudioFileReader::seek(qint64 frameIndex) {
-    if (!m_sf)
-        return -1;
-    const sf_count_t pos = sf_seek(m_sf, static_cast<sf_count_t>(frameIndex), SEEK_SET);
-    return pos < 0 ? -1 : static_cast<qint64>(pos);
 }
 
 } // namespace audio

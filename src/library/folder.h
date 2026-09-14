@@ -10,11 +10,15 @@
 namespace library {
 
 struct FolderNode {
-    QString                   path;
-    FolderNode            *parent = nullptr;
-    QVector<FolderNode *>  children;
-    QVector<library::AudioFile> files;
+    FolderNode()                              = default;
+    FolderNode(const FolderNode &)            = delete;
+    FolderNode &operator=(const FolderNode &) = delete;
     ~FolderNode() { qDeleteAll(children); }
+
+    QString                     path;
+    FolderNode                 *parent = nullptr;
+    QVector<FolderNode *>       children;
+    QVector<library::AudioFile> files;
 };
 
 struct Folder {

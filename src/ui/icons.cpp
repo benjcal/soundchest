@@ -1,5 +1,7 @@
 #include "icons.h"
 
+#include "theme.h"
+
 #include <QApplication>
 #include <QPainter>
 #include <QPalette>
@@ -8,10 +10,6 @@
 #include <oclero/qlementine/style/QlementineStyle.hpp>
 
 namespace {
-
-oclero::qlementine::QlementineStyle *qlementineStyle() {
-    return qobject_cast<oclero::qlementine::QlementineStyle *>(qApp->style());
-}
 
 QPixmap renderSvg(const QString &name, const QSize &size) {
     QSvgRenderer renderer(QStringLiteral(":/icons/%1.svg").arg(name));
@@ -34,12 +32,12 @@ QPixmap recolor(const QPixmap &source, const QColor &color) {
 
 } // namespace
 
-namespace icons {
+namespace ui::icons {
 
 QIcon mono(const QString &name) { return QIcon(QStringLiteral(":/icons/%1.svg").arg(name)); }
 
 void setAutoRecolor(QWidget *widget) {
-    if (qlementineStyle())
+    if (theme::qlementineStyle())
         oclero::qlementine::QlementineStyle::setAutoIconColor(widget,
                                                               oclero::qlementine::AutoIconColor::ForegroundColor);
 }
@@ -49,9 +47,9 @@ QPixmap colorized(const QString &name, const QSize &size, const QColor &color) {
 }
 
 QColor accent() {
-    if (auto *style = qlementineStyle())
+    if (auto *style = theme::qlementineStyle())
         return style->theme().primaryColor;
     return qApp->palette().color(QPalette::Highlight);
 }
 
-} // namespace icons
+} // namespace ui::icons

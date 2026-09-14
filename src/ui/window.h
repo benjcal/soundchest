@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 
+#include "analysis/sound_stats.h"
 #include "library/audio_file.h"
 
 class QModelIndex;
@@ -20,18 +21,20 @@ class Window : public QMainWindow {
   public:
     explicit Window(QWidget *parent = nullptr);
 
-    FileTableWidget   *fileTableWidget() const;
-    FolderTreeWidget  *folderTreeWidget() const;
-    HeaderBar         *header() const;
+    FileTableWidget   *fileTable() const;
+    FolderTreeWidget  *folderTree() const;
+    HeaderBar         *headerBar() const;
     TransportControls *transport() const;
     WaveformWidget    *waveform() const;
 
-    void    selectDirectory(const QModelIndex &index);
+    // Window owns only the status bar, dialogs, and tree focus; everything
+    // else is reached through the widget accessors above.
+    void    focusDirectoryInTree(const QModelIndex &index);
     QString chooseFolderPath();
+    QString chooseExportFolderPath(const QString &startDir);
     void    showScanResult(const QString &rootPath, int fileCount);
-    void    showAudioInfo(const library::AudioFile &info);
-    void    showError(const QString &message);
-    void    setProgress(double fraction);
+    void    statusAudioInfo(const library::AudioFile &info, const analysis::SoundStats *stats = nullptr);
+    void    setStatusMessage(const QString &message);
 
   private:
     HeaderBar         *m_header;

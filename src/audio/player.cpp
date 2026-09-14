@@ -41,8 +41,8 @@ bool applyDecoderWarningSilence() {
     if (!symbol)
         return false;
 
-    constexpr int avLogError = 16;
-    reinterpret_cast<void (*)(int)>(symbol)(avLogError);
+    constexpr int kAvLogError = 16; // AV_LOG_ERROR; libavutil headers are not linked here.
+    reinterpret_cast<void (*)(int)>(symbol)(kAvLogError);
     return true;
 }
 
@@ -50,9 +50,11 @@ void silenceDecoderWarnings() {
     if (qEnvironmentVariableIsSet("QT_FFMPEG_DEBUG"))
         return;
 
-    static bool applied = false;
-    if (!applied)
-        applied = applyDecoderWarningSilence();
+    // Only set once the plugin's libavutil has actually been loaded; until
+    // then the attempt fails and the next open() retries.
+    static bool avLogLevelApplied = false;
+    if (!avLogLevelApplied)
+        avLogLevelApplied = applyDecoderWarningSilence();
 }
 
 #else
@@ -69,7 +71,11 @@ Player::Player(QObject *parent)
     m_audioOutput->setVolume(m_volume / 100.0f);
 
     connect(m_media, &QMediaPlayer::errorOccurred, this,
-            [this](QMediaPlayer::Error, const QString &errorString) { emit loadFailed(errorString); });
+            [this](QMediaPlayer::Error, const QString &errorString) { emit errorOccurred(errorString); });
+    connect(m_media, &QMediaPlayer::positionChanged, this,
+            [this](qint64 positionMs) { emit positionChanged(positionMs / 1000.0); });
+    connect(m_media, &QMediaPlayer::playbackStateChanged, this,
+            [this](QMediaPlayer::PlaybackState state) { emit playingChanged(state == QMediaPlayer::PlayingState); });
 }
 
 Player::~Player() = default;
@@ -92,6 +98,13 @@ void Player::play() {
 
 void Player::stop() { m_media->stop(); }
 
+void Player::setPositionSec(double seconds) {
+    if (!hasMedia() || seconds < 0.0)
+        return;
+
+    m_media->setPosition(static_cast<qint64>(seconds * 1000.0));
+}
+
 void Player::setLooping(bool enabled) {
     m_looping = enabled;
     m_media->setLoops(enabled ? QMediaPlayer::Infinite : 1);
@@ -104,12 +117,9 @@ void Player::setVolumePercent(int percent) {
 
 int Player::volumePercent() const { return m_volume; }
 
-bool Player::isPlaying() const { return m_media->playbackState() == QMediaPlayer::PlayingState; }
+bool Player::hasMedia() const { return !m_filePath.isEmpty(); }
 
-double Player::positionSec() const {
-    const qint64 position = m_media->position();
-    return position > 0 ? position / 1000.0 : 0.0;
-}
+bool Player::isPlaying() const { return m_media->playbackState() == QMediaPlayer::PlayingState; }
 
 double Player::lengthSec() const {
     const qint64 duration = m_media->duration();

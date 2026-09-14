@@ -45,17 +45,13 @@ TransportControls::TransportControls(QWidget *parent) : QWidget(parent) {
 
     m_volumeSlider = new QSlider(Qt::Horizontal, this);
     m_volumeSlider->setRange(0, 100);
-    m_volumeSlider->setValue(80);
     m_volumeSlider->setFixedWidth(180);
 
-    auto *volumeIcon = new QLabel(this);
-    volumeIcon->setPixmap(
-        icons::colorized(QStringLiteral("speaker-high"), QSize(24, 24), palette().color(QPalette::WindowText)));
+    m_volumeIcon = new QLabel(this);
 
     connect(m_playButton, &QToolButton::clicked, this, &TransportControls::playClicked);
     connect(m_stopButton, &QToolButton::clicked, this, &TransportControls::stopClicked);
     connect(m_loopButton, &QToolButton::toggled, this, &TransportControls::loopToggled);
-    connect(m_autoplaySwitch, &oclero::qlementine::Switch::toggled, this, &TransportControls::autoplayChanged);
     connect(m_volumeSlider, &QSlider::valueChanged, this, &TransportControls::volumeChanged);
 
     layout->addWidget(m_playButton);
@@ -65,7 +61,7 @@ TransportControls::TransportControls(QWidget *parent) : QWidget(parent) {
     layout->addWidget(autoplayLabel);
     layout->addWidget(m_autoplaySwitch);
     layout->addStretch();
-    layout->addWidget(volumeIcon);
+    layout->addWidget(m_volumeIcon);
     layout->addWidget(m_volumeSlider);
 
     setControlsEnabled(false);
@@ -77,6 +73,13 @@ void TransportControls::setControlsEnabled(bool enabled) {
     m_loopButton->setEnabled(enabled);
     m_autoplaySwitch->setEnabled(enabled);
     m_volumeSlider->setEnabled(enabled);
+    updateVolumeIcon();
+}
+
+void TransportControls::updateVolumeIcon() {
+    const bool   enabled = m_volumeSlider->isEnabled();
+    const QColor color   = palette().color(enabled ? QPalette::Active : QPalette::Disabled, QPalette::WindowText);
+    m_volumeIcon->setPixmap(icons::colorized(QStringLiteral("speaker-high"), QSize(24, 24), color));
 }
 
 void TransportControls::setVolume(int value) { m_volumeSlider->setValue(value); }

@@ -13,15 +13,21 @@ namespace ui {
 
 namespace {
 
-QVector<QRectF> columnBands(const QRectF &area, const waveform::Peaks &peaks, int columns, qreal columnWidth) {
+// Half-height of the loudest column as a share of the widget height.
+constexpr qreal kAmplitudeFactor        = 0.46;
+constexpr qreal kColumnGapPx            = 1.0;
+constexpr qreal kMinColumnWidthForGapPx = 2.0;
+
+QVector<QRectF> columnBands(const QRectF &area, const waveform::Peaks &peaks, int pixelColumns, qreal columnWidth) {
     const int   sourceColumns = peaks.mins.size();
     const qreal midY          = area.center().y();
-    const qreal amplitude     = area.height() * 0.46;
+    const qreal amplitude     = area.height() * kAmplitudeFactor;
 
-    QVector<QRectF> bands(columns);
-    for (int column = 0; column < columns; ++column) {
-        const int from = static_cast<int>(static_cast<qint64>(column) * sourceColumns / columns);
-        const int to   = std::max(from + 1, static_cast<int>(static_cast<qint64>(column + 1) * sourceColumns / columns));
+    QVector<QRectF> bands(pixelColumns);
+    for (int column = 0; column < pixelColumns; ++column) {
+        const int from = static_cast<int>(static_cast<qint64>(column) * sourceColumns / pixelColumns);
+        const int to =
+            std::max(from + 1, static_cast<int>(static_cast<qint64>(column + 1) * sourceColumns / pixelColumns));
 
         float peak = 0.0f;
         for (int i = from; i < to; ++i)
@@ -63,12 +69,12 @@ void paintWaveform(QPainter *painter, const QRectF &area, const waveform::Peaks 
     if (sourceColumns == 0 || peaks.maxs.size() != sourceColumns || area.width() <= 0.0 || area.height() <= 0.0)
         return;
 
-    const qreal ratio       = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
-    const int   columns     = std::max(1, qRound(area.width() * ratio));
-    const qreal columnWidth = area.width() / columns;
-    const qreal gap         = columnWidth >= 2.0 ? 1.0 : 0.0;
+    const qreal ratio        = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
+    const int   pixelColumns = std::max(1, qRound(area.width() * ratio));
+    const qreal columnWidth  = area.width() / pixelColumns;
+    const qreal gap          = columnWidth >= kMinColumnWidthForGapPx ? kColumnGapPx : 0.0;
 
-    const QVector<QRectF> bands = columnBands(area, peaks, columns, columnWidth);
+    const QVector<QRectF> bands = columnBands(area, peaks, pixelColumns, columnWidth);
     const QPainterPath    path  = bandPath(bands, gap);
 
     painter->save();
