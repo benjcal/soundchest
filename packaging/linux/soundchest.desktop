@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Sound Chest
+GenericName=Sound Effect Browser
+Comment=Browse and audition a folder full of sound effects
+Exec=soundchest
+Icon=soundchest
+Terminal=false
+Categories=AudioVideo;Audio;
+Keywords=audio;sound;effects;sample;library;browse;audition;
+StartupNotify=true
+StartupWMClass=soundchest

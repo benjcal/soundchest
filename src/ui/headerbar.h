@@ -12,6 +12,7 @@ class HeaderBar : public QWidget {
 
   signals:
     void openFolderRequested();
+    void aboutRequested();
 };
 
 } // namespace ui

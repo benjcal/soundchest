@@ -1,12 +1,20 @@
 <RCC>
     <qresource prefix="/icons">
+        <file alias="file-text.svg">assets/icons/file-text.svg</file>
         <file alias="folder-closed.svg">assets/icons/folder-closed.svg</file>
         <file alias="folder-open.svg">assets/icons/folder-open.svg</file>
+        <file alias="github-logo.svg">assets/icons/github-logo.svg</file>
+        <file alias="info.svg">assets/icons/info.svg</file>
         <file alias="play.svg">assets/icons/play.svg</file>
         <file alias="repeat.svg">assets/icons/repeat.svg</file>
         <file alias="speaker-high.svg">assets/icons/speaker-high.svg</file>
         <file alias="stop.svg">assets/icons/stop.svg</file>
         <file alias="waveform.svg">assets/icons/waveform.svg</file>
+    </qresource>
+    <qresource prefix="/branding">
+        <file alias="appicon.svg">assets/branding/soundchest-appicon.svg</file>
+        <file alias="icon.svg">assets/branding/soundchest-icon.svg</file>
+        <file alias="lockup-on-dark.svg">assets/branding/soundchest-lockup-on-dark.svg</file>
     </qresource>
     <qresource prefix="/themes">
         <file alias="gruvbox.json">assets/themes/gruvbox.json</file>

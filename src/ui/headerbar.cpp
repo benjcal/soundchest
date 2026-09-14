@@ -6,8 +6,6 @@
 #include <QLabel>
 #include <QToolButton>
 
-#include <oclero/qlementine/widgets/Label.hpp>
-
 namespace ui {
 
 HeaderBar::HeaderBar(QWidget *parent) : QWidget(parent) {
@@ -18,10 +16,15 @@ HeaderBar::HeaderBar(QWidget *parent) : QWidget(parent) {
     layout->setSpacing(12);
 
     auto *logo = new QLabel(this);
-    logo->setPixmap(icons::colorized(QStringLiteral("waveform"), QSize(30, 30), icons::accent()));
+    logo->setPixmap(icons::pixmap(QStringLiteral(":/branding/lockup-on-dark.svg"), QSize(0, 24)));
+    logo->setAccessibleName(QStringLiteral("Sound Chest"));
 
-    auto *title = new oclero::qlementine::Label(QStringLiteral("Sound Chest"), oclero::qlementine::TextRole::H5, this);
-    title->setObjectName(QStringLiteral("appTitle"));
+    auto *aboutButton = new QToolButton(this);
+    aboutButton->setIcon(icons::mono(QStringLiteral("info")));
+    aboutButton->setIconSize(QSize(22, 22));
+    aboutButton->setMinimumSize(40, 36);
+    aboutButton->setToolTip(QStringLiteral("About Sound Chest"));
+    icons::setAutoRecolor(aboutButton);
 
     auto *openButton = new QToolButton(this);
     openButton->setIcon(icons::mono(QStringLiteral("folder-open")));
@@ -30,11 +33,12 @@ HeaderBar::HeaderBar(QWidget *parent) : QWidget(parent) {
     openButton->setToolTip(QStringLiteral("Open Folder"));
     icons::setAutoRecolor(openButton);
 
+    connect(aboutButton, &QToolButton::clicked, this, &HeaderBar::aboutRequested);
     connect(openButton, &QToolButton::clicked, this, &HeaderBar::openFolderRequested);
 
     layout->addWidget(logo);
-    layout->addWidget(title);
     layout->addStretch();
+    layout->addWidget(aboutButton);
     layout->addWidget(openButton);
 }
 

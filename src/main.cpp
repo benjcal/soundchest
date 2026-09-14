@@ -12,9 +12,14 @@
 #include "waveform/peaks_builder.h"
 
 #include <QApplication>
+#include <QIcon>
 #include <QLoggingCategory>
 
 #include <oclero/qlementine/resources/ResourceInitialization.hpp>
+
+#ifndef SOUNDCHEST_VERSION
+#define SOUNDCHEST_VERSION "0.1.0"
+#endif
 
 int main(int argc, char *argv[]) {
 #ifdef Q_OS_LINUX
@@ -40,6 +45,9 @@ int main(int argc, char *argv[]) {
     app.setApplicationName(QStringLiteral("soundchest"));
     app.setApplicationDisplayName(QStringLiteral("Sound Chest"));
     app.setOrganizationName(QStringLiteral("soundchest"));
+    app.setApplicationVersion(QStringLiteral(SOUNDCHEST_VERSION));
+    app.setDesktopFileName(QStringLiteral("soundchest"));
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/branding/appicon.svg")));
 
     oclero::qlementine::resources::initializeResources();
 

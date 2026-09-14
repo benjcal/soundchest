@@ -13,6 +13,7 @@ It depends on the third-party components below, each with its own license.
 | [libebur128](https://github.com/jiixyj/libebur128) | MIT | EBU R128 loudness measurement (LUFS) | https://github.com/jiixyj/libebur128 |
 | [Qlementine](https://github.com/oclero/qlementine) | MIT | Qt widget style | https://github.com/oclero/qlementine |
 | [Phosphor Icons](https://github.com/phosphor-icons/core) | MIT | Application and toolbar icons | https://github.com/phosphor-icons/core |
+| [Inter](https://github.com/rsms/inter) | SIL OFL 1.1 | Letterforms in the Sound Chest wordmark (converted to outlines) | https://github.com/rsms/inter |
 
 ## LGPL compliance
 

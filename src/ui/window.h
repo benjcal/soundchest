@@ -37,6 +37,8 @@ class Window : public QMainWindow {
     void    setStatusMessage(const QString &message);
 
   private:
+    void showAboutDialog();
+
     HeaderBar         *m_header;
     WaveformWidget    *m_waveform;
     TransportControls *m_transport;

@@ -4,23 +4,31 @@
 #include "folder_tree_widget.h"
 #include "format.h"
 #include "headerbar.h"
+#include "icons.h"
 #include "transport_controls.h"
 #include "waveform_widget.h"
 
 #include <QApplication>
 #include <QDir>
 #include <QFileDialog>
+#include <QIcon>
+#include <QKeySequence>
 #include <QModelIndex>
 #include <QSettings>
+#include <QShortcut>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QVBoxLayout>
+
+#include <oclero/qlementine/widgets/AboutDialog.hpp>
 
 namespace ui {
 
 namespace {
 
 constexpr auto kLastOpenDirKey = "open/lastDir";
+constexpr auto kRepoUrl        = "https://github.com/benjcal/soundchest";
+constexpr auto kNoticesUrl     = "https://github.com/benjcal/soundchest/blob/main/THIRD_PARTY_NOTICES.md";
 
 } // namespace
 
@@ -59,6 +67,11 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
     layout->addWidget(splitter, 5);
 
     setCentralWidget(central);
+
+    connect(m_header, &HeaderBar::aboutRequested, this, &Window::showAboutDialog);
+
+    auto *aboutShortcut = new QShortcut(QKeySequence::HelpContents, this);
+    connect(aboutShortcut, &QShortcut::activated, this, &Window::showAboutDialog);
 }
 
 FileTableWidget *Window::fileTable() const { return m_fileTable; }
@@ -116,6 +129,24 @@ QString Window::chooseFolderPath() {
 QString Window::chooseExportFolderPath(const QString &startDir) {
     return QFileDialog::getExistingDirectory(this, QStringLiteral("Export To Folder"), startDir,
                                              QFileDialog::ShowDirsOnly);
+}
+
+void Window::showAboutDialog() {
+    oclero::qlementine::AboutDialog dialog(this);
+    dialog.setIcon(QIcon(QStringLiteral(":/branding/appicon.svg")));
+    dialog.setApplicationVersion(QApplication::applicationVersion());
+    dialog.setDescription(QStringLiteral("Browse and audition a folder full of sound effects."));
+    dialog.setWebsiteUrl(QString::fromLatin1(kRepoUrl));
+    dialog.setLicense(QStringLiteral("MIT License"));
+    dialog.setCopyright(QStringLiteral("© 2026 Benjamin Calderon"));
+
+    const QColor iconColor = palette().color(QPalette::WindowText);
+    dialog.addSocialMediaLink(QStringLiteral("GitHub"), QString::fromLatin1(kRepoUrl),
+                              QIcon(icons::colorized(QStringLiteral("github-logo"), QSize(20, 20), iconColor)));
+    dialog.addSocialMediaLink(QStringLiteral("Third-party notices"), QString::fromLatin1(kNoticesUrl),
+                              QIcon(icons::colorized(QStringLiteral("file-text"), QSize(20, 20), iconColor)));
+
+    dialog.exec();
 }
 
 } // namespace ui
