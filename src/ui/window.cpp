@@ -9,6 +9,7 @@
 #include "waveform_widget.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QDir>
 #include <QFileDialog>
 #include <QIcon>
@@ -21,12 +22,15 @@
 #include <QVBoxLayout>
 
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
+#include <oclero/qlementine/widgets/LoadingSpinner.hpp>
 
 namespace ui {
 
 namespace {
 
 constexpr auto kLastOpenDirKey = "open/lastDir";
+constexpr auto kGeometryKey    = "window/geometry";
+constexpr auto kSplitterKey    = "window/splitter";
 constexpr auto kRepoUrl        = "https://github.com/benjcal/soundchest";
 constexpr auto kNoticesUrl     = "https://github.com/benjcal/soundchest/blob/main/THIRD_PARTY_NOTICES.md";
 
@@ -40,6 +44,10 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
     statusBar()->setObjectName(QStringLiteral("statusBar"));
     statusBar()->showMessage(QStringLiteral("Ready"));
 
+    m_spinner = new oclero::qlementine::LoadingSpinner(this);
+    statusBar()->addPermanentWidget(m_spinner);
+    m_spinner->hide();
+
     auto *central = new QWidget(this);
     auto *layout  = new QVBoxLayout(central);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -49,22 +57,22 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
     m_waveform  = new WaveformWidget(central);
     m_transport = new TransportControls(central);
 
-    auto *splitter = new QSplitter(Qt::Horizontal, central);
-    splitter->setObjectName(QStringLiteral("browserSplitter"));
-    splitter->setChildrenCollapsible(false);
+    m_splitter = new QSplitter(Qt::Horizontal, central);
+    m_splitter->setObjectName(QStringLiteral("browserSplitter"));
+    m_splitter->setChildrenCollapsible(false);
 
-    m_folderTree = new FolderTreeWidget(splitter);
-    m_fileTable  = new FileTableWidget(splitter);
-    splitter->addWidget(m_folderTree);
-    splitter->addWidget(m_fileTable);
-    splitter->setStretchFactor(0, 0);
-    splitter->setStretchFactor(1, 1);
-    splitter->setSizes({260, 940});
+    m_folderTree = new FolderTreeWidget(m_splitter);
+    m_fileTable  = new FileTableWidget(m_splitter);
+    m_splitter->addWidget(m_folderTree);
+    m_splitter->addWidget(m_fileTable);
+    m_splitter->setStretchFactor(0, 0);
+    m_splitter->setStretchFactor(1, 1);
+    m_splitter->setSizes({260, 940});
 
     layout->addWidget(m_header);
     layout->addWidget(m_waveform, 3);
     layout->addWidget(m_transport);
-    layout->addWidget(splitter, 5);
+    layout->addWidget(m_splitter, 5);
 
     setCentralWidget(central);
 
@@ -72,6 +80,8 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
 
     auto *aboutShortcut = new QShortcut(QKeySequence::HelpContents, this);
     connect(aboutShortcut, &QShortcut::activated, this, &Window::showAboutDialog);
+
+    restoreSettings();
 }
 
 FileTableWidget *Window::fileTable() const { return m_fileTable; }
@@ -112,6 +122,14 @@ void Window::statusAudioInfo(const library::AudioFile &info, const analysis::Sou
 
 void Window::setStatusMessage(const QString &message) { statusBar()->showMessage(message); }
 
+void Window::setScanning(bool scanning, const QString &path) {
+    m_spinner->setSpinning(scanning);
+    m_spinner->setVisible(scanning);
+
+    if (scanning)
+        statusBar()->showMessage(QStringLiteral("Scanning %1…").arg(path));
+}
+
 QString Window::chooseFolderPath() {
     const QSettings settings;
     const QString   startDir = settings.value(kLastOpenDirKey, QDir::homePath()).toString();
@@ -126,9 +144,42 @@ QString Window::chooseFolderPath() {
     return path;
 }
 
+QString Window::lastOpenDir() const {
+    const QSettings settings;
+    return settings.value(kLastOpenDirKey).toString();
+}
+
 QString Window::chooseExportFolderPath(const QString &startDir) {
     return QFileDialog::getExistingDirectory(this, QStringLiteral("Export To Folder"), startDir,
                                              QFileDialog::ShowDirsOnly);
+}
+
+void Window::closeEvent(QCloseEvent *event) {
+    saveSettings();
+    QMainWindow::closeEvent(event);
+}
+
+void Window::restoreSettings() {
+    const QSettings settings;
+
+    const QByteArray geometry = settings.value(kGeometryKey).toByteArray();
+    if (!geometry.isEmpty())
+        restoreGeometry(geometry);
+
+    const QList<QVariant> storedSizes = settings.value(kSplitterKey).toList();
+    if (storedSizes.size() == 2) {
+        QList<int> sizes;
+        sizes.reserve(storedSizes.size());
+        for (const QVariant &size : storedSizes)
+            sizes.append(size.toInt());
+        m_splitter->setSizes(sizes);
+    }
+}
+
+void Window::saveSettings() {
+    QSettings settings;
+    settings.setValue(kGeometryKey, saveGeometry());
+    settings.setValue(kSplitterKey, QVariant::fromValue(m_splitter->sizes()));
 }
 
 void Window::showAboutDialog() {

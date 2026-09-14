@@ -26,7 +26,9 @@ const QSet<QString> &audioExtensions() {
 }
 
 const QCollator &nameCollator() {
-    static const QCollator collator = [] {
+    // A QCollator is not safe to share across threads, and scans may overlap
+    // when the user opens a new folder while a previous scan is still running.
+    thread_local const QCollator collator = [] {
         QCollator result;
         result.setNumericMode(true);
         return result;

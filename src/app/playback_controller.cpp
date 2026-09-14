@@ -7,6 +7,7 @@
 #include "ui/window.h"
 
 #include <QFileInfo>
+#include <QSettings>
 #include <QTimer>
 
 #include <algorithm>
@@ -18,6 +19,10 @@ namespace {
 // The FFmpeg backend reports the position every 50 ms; this ticker fills the
 // gaps so the playhead moves at roughly 60 fps.
 constexpr int kProgressTickMs = 16;
+
+constexpr auto kVolumeKey   = "audio/volume";
+constexpr auto kLoopKey     = "audio/loop";
+constexpr auto kAutoplayKey = "audio/autoplay";
 
 } // namespace
 
@@ -45,7 +50,19 @@ PlaybackController::PlaybackController(ui::Window *window, audio::Player *player
 
     m_clock.start();
 
-    m_window->transport()->setVolume(m_player->volumePercent());
+    // Restore the audio preferences. Setting the controls pushes the values
+    // through the connections above, so the player and the UI stay in sync.
+    const QSettings settings;
+    m_window->transport()->setVolume(settings.value(kVolumeKey, m_player->volumePercent()).toInt());
+    m_window->transport()->setLooping(settings.value(kLoopKey, false).toBool());
+    m_window->transport()->setAutoplay(settings.value(kAutoplayKey, false).toBool());
+}
+
+PlaybackController::~PlaybackController() {
+    QSettings settings;
+    settings.setValue(kVolumeKey, m_player->volumePercent());
+    settings.setValue(kLoopKey, m_window->transport()->looping());
+    settings.setValue(kAutoplayKey, m_window->transport()->autoplay());
 }
 
 void PlaybackController::onSoundSelected(const library::AudioFile &file) {

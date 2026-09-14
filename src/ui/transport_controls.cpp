@@ -84,6 +84,12 @@ void TransportControls::updateVolumeIcon() {
 
 void TransportControls::setVolume(int value) { m_volumeSlider->setValue(value); }
 
+void TransportControls::setLooping(bool enabled) { m_loopButton->setChecked(enabled); }
+
+bool TransportControls::looping() const { return m_loopButton->isChecked(); }
+
+void TransportControls::setAutoplay(bool enabled) { m_autoplaySwitch->setChecked(enabled); }
+
 bool TransportControls::autoplay() const { return m_autoplaySwitch->isChecked(); }
 
 } // namespace ui

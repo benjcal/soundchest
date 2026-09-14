@@ -14,6 +14,7 @@
 #include <QApplication>
 #include <QIcon>
 #include <QLoggingCategory>
+#include <QTimer>
 
 #include <oclero/qlementine/resources/ResourceInitialization.hpp>
 
@@ -80,5 +81,6 @@ int main(int argc, char *argv[]) {
                      &app::PlaybackController::onSoundActivated);
 
     window.show();
+    QTimer::singleShot(0, &libraryController, &app::LibraryController::openLastFolder);
     return app.exec();
 }

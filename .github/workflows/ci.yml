@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: 6.8.3
+  QLEMENTINE_VERSION: v1.4.2
+
+jobs:
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsndfile1-dev libebur128-dev ninja-build
+
+      # Qt Multimedia is an addon module in 6.8; qtsvg and concurrent ship in
+      # the base installation.
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          cache: true
+
+      # qlementine requires Qt 6.8+ and is not packaged on Ubuntu.
+      - name: Build qlementine
+        run: |
+          curl -L "https://github.com/oclero/qlementine/archive/refs/tags/${QLEMENTINE_VERSION}.tar.gz" -o qlementine.tar.gz
+          tar xf qlementine.tar.gz
+          cmake -S "qlementine-${QLEMENTINE_VERSION#v}" -B qlementine-build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" \
+            -DCMAKE_INSTALL_PREFIX="$HOME/qlementine"
+          cmake --build qlementine-build
+          cmake --install qlementine-build
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR;$HOME/qlementine"
+
+      - name: Build
+        run: cmake --build build

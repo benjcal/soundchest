@@ -20,6 +20,9 @@ class TransportControls : public QWidget {
 
     void setControlsEnabled(bool enabled);
     void setVolume(int value);
+    void setLooping(bool enabled);
+    bool looping() const;
+    void setAutoplay(bool enabled);
     bool autoplay() const;
 
   signals:

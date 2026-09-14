@@ -21,6 +21,7 @@ class PlaybackController : public QObject {
 
   public:
     PlaybackController(ui::Window *window, audio::Player *player, QObject *parent = nullptr);
+    ~PlaybackController() override;
 
   public slots:
     void onSoundSelected(const library::AudioFile &file);

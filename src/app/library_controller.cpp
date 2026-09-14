@@ -9,26 +9,25 @@
 #include "ui/headerbar.h"
 #include "ui/window.h"
 
-#include <QApplication>
+#include <QFileInfo>
 #include <QModelIndex>
 #include <QSignalBlocker>
+#include <QtConcurrent/QtConcurrentRun>
 
 namespace app {
 
 LibraryController::LibraryController(ui::Window *window, ui::FolderTreeWidgetModel *folderModel,
                                      ui::FileTableWidgetModel *fileModel, QObject *parent)
-    : QObject(parent), m_window(window), m_folderModel(folderModel), m_fileModel(fileModel) {
+    : QObject(parent), m_window(window), m_folderModel(folderModel), m_fileModel(fileModel), m_scanWatcher(this) {
     m_window->folderTree()->setModel(m_folderModel);
     m_window->fileTable()->setModel(m_fileModel);
 
+    connect(&m_scanWatcher, &QFutureWatcher<ScanOutcome>::finished, this, &LibraryController::finishScan);
+
     connect(m_window->headerBar(), &ui::HeaderBar::openFolderRequested, this, [this] {
         const QString path = m_window->chooseFolderPath();
-        if (path.isEmpty())
-            return;
-
-        QApplication::setOverrideCursor(Qt::WaitCursor);
-        openFolder(path);
-        QApplication::restoreOverrideCursor();
+        if (!path.isEmpty())
+            openFolder(path);
     });
     connect(m_window->folderTree(), &ui::FolderTreeWidget::currentDirectoryChanged, this,
             &LibraryController::showDirectory);
@@ -40,13 +39,40 @@ void LibraryController::openFolder(const QString &path) {
     if (path.isEmpty())
         return;
 
-    QString    error;
-    const auto folder = library::AudioLibraryScanner::scan(path, &error);
-    if (!folder) {
-        m_window->setStatusMessage(QStringLiteral("Could not scan %1: %2").arg(path, error));
+    m_window->setScanning(true, path);
+
+    // setFuture() detaches from any previous scan, so its finished() never
+    // reaches finishScan() and a stale result cannot overwrite a newer folder.
+    m_scanWatcher.setFuture(QtConcurrent::run([path] {
+        ScanOutcome outcome;
+        outcome.path   = path;
+        outcome.folder = library::AudioLibraryScanner::scan(path, &outcome.error);
+        return outcome;
+    }));
+}
+
+void LibraryController::openLastFolder() {
+    const QString path = m_window->lastOpenDir();
+    if (path.isEmpty() || !QFileInfo(path).isDir())
+        return;
+
+    openFolder(path);
+}
+
+void LibraryController::finishScan() {
+    const ScanOutcome outcome = m_scanWatcher.result();
+    m_window->setScanning(false);
+
+    if (!outcome.folder) {
+        m_window->setStatusMessage(QStringLiteral("Could not scan %1: %2").arg(outcome.path, outcome.error));
+        emit scanFailed(outcome.path, outcome.error);
         return;
     }
 
+    applyFolder(outcome.folder);
+}
+
+void LibraryController::applyFolder(const std::shared_ptr<const library::Folder> &folder) {
     m_folderModel->setFolder(folder);
     m_window->showScanResult(folder->root->path, folder->fileCount());
 
@@ -61,6 +87,8 @@ void LibraryController::openFolder(const QString &path) {
         m_window->focusDirectoryInTree(root);
     }
     loadDirectory(root);
+
+    emit folderOpened(folder->root->path, folder->fileCount());
 }
 
 void LibraryController::showDirectory(const QModelIndex &index) { loadDirectory(index); }

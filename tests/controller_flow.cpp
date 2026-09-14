@@ -8,7 +8,9 @@
 #include "waveform/peaks_builder.h"
 
 #include <QApplication>
+#include <QDir>
 #include <QMimeData>
+#include <QSettings>
 #include <QTimer>
 #include <QUrl>
 
@@ -16,6 +18,12 @@
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
+
+    // Keep the settings the controllers read and write out of the user's real
+    // configuration directory.
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
+                       QDir::tempPath() + QStringLiteral("/soundchest-test-config"));
 
     if (argc < 2) {
         std::fprintf(stderr, "usage: %s <folder>\n", argv[0]);
@@ -42,11 +50,27 @@ int main(int argc, char **argv) {
     window.show();
 
     QString folder = QString::fromLocal8Bit(argv[1]);
-    QTimer::singleShot(0, &libraryController, [&] { libraryController.openFolder(folder); });
+
+    // Drive the launch path: seed the previous session's folder and let the
+    // controller reopen it, rather than calling openFolder() directly.
+    {
+        QSettings settings;
+        settings.setValue(QStringLiteral("open/lastDir"), folder);
+    }
+    QTimer::singleShot(0, &libraryController, [&] { libraryController.openLastFolder(); });
 
     bool activated = false;
     QObject::connect(&libraryController, &app::LibraryController::soundActivated, &app,
                      [&](const library::AudioFile &) { activated = true; });
+
+    bool scanned = false;
+    QObject::connect(&libraryController, &app::LibraryController::folderOpened, &app,
+                     [&](const QString &, int) { scanned = true; });
+    QObject::connect(&libraryController, &app::LibraryController::scanFailed, &app,
+                     [&](const QString &path, const QString &error) {
+                         std::fprintf(stderr, "scan failed for %s: %s\n", qPrintable(path), qPrintable(error));
+                         app.exit(2);
+                     });
 
     int  exitCode = 1;
     QTimer::singleShot(3000, &app, [&] {
@@ -70,9 +94,17 @@ int main(int argc, char **argv) {
 
         libraryController.activateFile(0);
 
-        std::printf("rootFiles=%d peaks=%s subdirs=%d nestedFiles=%d activated=%s dragUrls=%d\n", rootFiles,
-                    gotPeaks ? "yes" : "no", subdirs, nestedRows, activated ? "yes" : "no", urlCount);
-        exitCode = (rootFiles >= 1 && gotPeaks && activated && urlCount == rootFiles) ? 0 : 1;
+        // Closing the window must persist the session state.
+        window.close();
+        const bool savedGeometry = !QSettings().value(QStringLiteral("window/geometry")).toByteArray().isEmpty();
+
+        std::printf("rootFiles=%d scanned=%s peaks=%s subdirs=%d nestedFiles=%d activated=%s dragUrls=%d saved=%s\n",
+                    rootFiles, scanned ? "yes" : "no", gotPeaks ? "yes" : "no", subdirs, nestedRows,
+                    activated ? "yes" : "no", urlCount, savedGeometry ? "yes" : "no");
+
+        const bool passed =
+            scanned && rootFiles >= 1 && gotPeaks && activated && urlCount == rootFiles && savedGeometry;
+        exitCode = passed ? 0 : 1;
         app.quit();
     });
 
