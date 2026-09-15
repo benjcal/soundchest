@@ -31,7 +31,9 @@ peak, RMS and EBU R128 loudness as you go.
 | **Every format at a glance** | **Metadata in the table** |
 | ![Supported formats](assets/media/screenshot-formats.png) | ![Files in a category](assets/media/screenshot-files.png) |
 
-<!-- Demo GIF goes here once recorded: assets/media/soundchest-demo.gif -->
+<p align="center">
+  <img alt="Browsing a sound library, auditioning a file and seeking the waveform" src="assets/media/soundchest-demo.gif" width="960">
+</p>
 
 ## Features
 

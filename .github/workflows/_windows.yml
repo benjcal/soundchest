@@ -1,0 +1,119 @@
+name: Build (Windows)
+
+on:
+  workflow_call:
+
+env:
+  QT_VERSION: 6.8.3
+  QLEMENTINE_VERSION: v1.4.2
+  VCPKG_TRIPLET: x64-windows
+
+jobs:
+  package:
+    name: Zip
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Locate vcpkg
+        shell: pwsh
+        run: |
+          $root = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $root) { $root = "C:\vcpkg" }
+          "VCPKG_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          & "$env:VCPKG_ROOT\vcpkg.exe" install libsndfile libebur128 `
+            --triplet "$env:VCPKG_TRIPLET" --clean-after-build
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2022_64
+          modules: qtmultimedia
+          cache: true
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build qlementine
+        uses: ./.github/actions/qlementine
+        with:
+          version: ${{ env.QLEMENTINE_VERSION }}
+          qt-prefix: ${{ env.QT_ROOT_DIR }}
+          prefix: ${{ github.workspace }}/qlementine-install
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR;${{ github.workspace }}/qlementine-install" `
+            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            "-DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET"
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cmake --build build
+
+      - name: Test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          ctest --test-dir build --output-on-failure
+
+      - name: Stage
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          New-Item -ItemType Directory -Path stage | Out-Null
+          Copy-Item build/soundchest.exe stage/
+          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations `
+            --no-compiler-runtime stage/soundchest.exe
+          Copy-Item "$env:VCPKG_ROOT\installed\$env:VCPKG_TRIPLET\bin\*.dll" stage/
+          Copy-Item LICENSE, THIRD_PARTY_NOTICES.md stage/
+
+          foreach ($pattern in 'sndfile*.dll', 'ebur128*.dll', 'avcodec*.dll') {
+            if (-not (Get-ChildItem stage -Filter $pattern)) {
+              Write-Error "stage is missing $pattern"
+            }
+          }
+
+          $version = (Select-String -Path CMakeLists.txt -Pattern 'project\(soundchest VERSION ([0-9.]+)').Matches[0].Groups[1].Value
+          Compress-Archive -Path stage/* -DestinationPath "SoundChest-$version-windows-x64.zip" -Force
+
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP "smoke.log"
+          $process = Start-Process -FilePath "stage\soundchest.exe" -PassThru `
+            -RedirectStandardError $log -RedirectStandardOutput "$log.out"
+          Start-Sleep -Seconds 5
+          if ($process.HasExited) {
+            Get-Content $log -ErrorAction SilentlyContinue
+            Get-Content "$log.out" -ErrorAction SilentlyContinue
+            Write-Error "soundchest.exe exited early with code $($process.ExitCode)"
+          }
+          Stop-Process -Id $process.Id
+
+      - name: Upload zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: soundchest-windows-x64
+          path: SoundChest-*-windows-x64.zip
+          if-no-files-found: error

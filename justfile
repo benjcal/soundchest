@@ -16,6 +16,9 @@ build-release: configure-release
 run-release: build-release
     ./build-release/soundchest
 
+demo-gif: build-release
+    scripts/record-demo.sh
+
 format:
     clang-format -i $(find src -type f \( -name '*.cpp' -o -name '*.h' \))
 

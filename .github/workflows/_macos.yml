@@ -1,0 +1,109 @@
+name: Build (macOS)
+
+on:
+  workflow_call:
+
+env:
+  QT_VERSION: 6.8.3
+  QLEMENTINE_VERSION: v1.4.2
+  VCPKG_TRIPLET: arm64-osx-dynamic
+  MACOSX_DEPLOYMENT_TARGET: "12.0"
+
+jobs:
+  package:
+    name: DMG
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Locate vcpkg
+        run: |
+          root="${VCPKG_INSTALLATION_ROOT:-/usr/local/share/vcpkg}"
+          echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        env:
+          VCPKG_OSX_DEPLOYMENT_TARGET: ${{ env.MACOSX_DEPLOYMENT_TARGET }}
+        run: |
+          "$VCPKG_ROOT/vcpkg" install libsndfile libebur128 \
+            --triplet "$VCPKG_TRIPLET" --clean-after-build
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          cache: true
+
+      - name: Build qlementine
+        uses: ./.github/actions/qlementine
+        with:
+          version: ${{ env.QLEMENTINE_VERSION }}
+          qt-prefix: ${{ env.QT_ROOT_DIR }}
+          prefix: ${{ github.workspace }}/qlementine-install
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR;${{ github.workspace }}/qlementine-install" \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Bundle dependencies
+        run: |
+          brew install dylibbundler
+          mv build/soundchest.app "build/Sound Chest.app"
+          # dylibbundler handles the plain dylibs from vcpkg (libsndfile and
+          # its codec dependencies); macdeployqt handles Qt and its FFmpeg
+          # libraries. Without -f, dylibbundler leaves Qt frameworks alone.
+          dylibbundler -od -b \
+            -x "build/Sound Chest.app/Contents/MacOS/soundchest" \
+            -d "build/Sound Chest.app/Contents/Frameworks" \
+            -p @executable_path/../Frameworks
+          macdeployqt "build/Sound Chest.app" -always-overwrite -no-translations
+
+          if otool -L "build/Sound Chest.app/Contents/MacOS/soundchest" | grep -Eq '/(opt/homebrew|usr/local|Users/runner)/'; then
+            echo "unbundled library references remain:" >&2
+            otool -L "build/Sound Chest.app/Contents/MacOS/soundchest" | grep -E '/(opt/homebrew|usr/local|Users/runner)/' >&2
+            exit 1
+          fi
+          ls "build/Sound Chest.app/Contents/Frameworks" | grep -qi sndfile
+
+          codesign --force --deep --sign - "build/Sound Chest.app"
+
+      - name: Smoke test
+        run: |
+          log="$RUNNER_TEMP/smoke.log"
+          "build/Sound Chest.app/Contents/MacOS/soundchest" >"$log" 2>&1 &
+          app_pid=$!
+          sleep 5
+          if ! kill -0 "$app_pid" 2>/dev/null; then
+            cat "$log"
+            echo "app exited early" >&2
+            exit 1
+          fi
+          kill "$app_pid"
+
+      - name: Build DMG
+        run: |
+          version=$(grep -oP 'project\(soundchest VERSION \K[0-9.]+' CMakeLists.txt)
+          mkdir -p dmg
+          cp -R "build/Sound Chest.app" dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname "Sound Chest" -srcfolder dmg -ov -format UDZO \
+            "SoundChest-${version}-macos-arm64.dmg"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v7
+        with:
+          name: soundchest-macos-arm64
+          path: SoundChest-*-macos-arm64.dmg
+          if-no-files-found: error

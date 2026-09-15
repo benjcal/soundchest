@@ -1,0 +1,50 @@
+name: Build qlementine
+description: Builds qlementine from source and installs it into a prefix.
+
+inputs:
+  version:
+    description: qlementine git tag (e.g. v1.4.2)
+    required: true
+  qt-prefix:
+    description: Qt installation prefix (QT_ROOT_DIR)
+    required: true
+  prefix:
+    description: install prefix for qlementine
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Build qlementine (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        version="${{ inputs.version }}"
+        curl -L "https://github.com/oclero/qlementine/archive/refs/tags/${version}.tar.gz" -o qlementine.tar.gz
+        tar xf qlementine.tar.gz
+        cmake -S "qlementine-${version#v}" -B qlementine-build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_PREFIX_PATH="${{ inputs.qt-prefix }}" \
+          -DCMAKE_INSTALL_PREFIX="${{ inputs.prefix }}"
+        cmake --build qlementine-build
+        cmake --install qlementine-build
+
+    - name: Build qlementine (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
+        $version = "${{ inputs.version }}".TrimStart('v')
+        Invoke-WebRequest -Uri "https://github.com/oclero/qlementine/archive/refs/tags/${{ inputs.version }}.tar.gz" -OutFile qlementine.tar.gz
+        tar xf qlementine.tar.gz
+        cmake -S "qlementine-$version" -B qlementine-build -G Ninja `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DBUILD_SHARED_LIBS=OFF `
+          -DCMAKE_PREFIX_PATH="${{ inputs.qt-prefix }}" `
+          -DCMAKE_INSTALL_PREFIX="${{ inputs.prefix }}"
+        cmake --build qlementine-build
+        cmake --install qlementine-build

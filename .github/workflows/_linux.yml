@@ -1,0 +1,106 @@
+name: Build (Linux)
+
+on:
+  workflow_call:
+
+env:
+  QT_VERSION: 6.8.3
+  QLEMENTINE_VERSION: v1.4.2
+
+jobs:
+  appimage:
+    name: AppImage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsndfile1-dev libebur128-dev ninja-build \
+            patchelf desktop-file-utils ffmpeg
+
+      # Qt Multimedia is an addon module in 6.8; qtsvg and concurrent ship in
+      # the base installation.
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          cache: true
+
+      - name: Build qlementine
+        uses: ./.github/actions/qlementine
+        with:
+          version: ${{ env.QLEMENTINE_VERSION }}
+          qt-prefix: ${{ env.QT_ROOT_DIR }}
+          prefix: ${{ github.workspace }}/qlementine-install
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR;${{ github.workspace }}/qlementine-install"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: End-to-end smoke test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          scripts/make-demo-library.sh demo-library
+          ./build/controller_flow demo-library
+
+      - name: Install packaging tools
+        run: |
+          curl -L -o linuxdeploy-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage
+          curl -L -o linuxdeploy-plugin-qt-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Stage AppDir
+        run: |
+          mkdir -p AppDir
+          DESTDIR="$PWD/AppDir" cmake --install build --prefix /usr
+
+      - name: Build AppImage
+        run: |
+          wayland_plugins=$(cd "$QT_ROOT_DIR/plugins/platforms" && ls libqwayland*.so 2>/dev/null | paste -sd';' -)
+          export EXTRA_PLATFORM_PLUGINS="${wayland_plugins:+$wayland_plugins;}libqoffscreen.so"
+          export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          # Inherited by linuxdeploy's child processes, including the plugin
+          # AppImage; the CLI flag alone would not be.
+          export APPIMAGE_EXTRACT_AND_RUN=1
+
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+
+          version=$(grep -oP 'project\(soundchest VERSION \K[0-9.]+' CMakeLists.txt)
+          built=$(ls ./*.AppImage | grep -v linuxdeploy)
+          mv "$built" "SoundChest-${version}-x86_64.AppImage"
+
+      - name: Smoke test AppImage
+        run: |
+          ./SoundChest-*-x86_64.AppImage --appimage-extract >/dev/null
+          QT_QPA_PLATFORM=offscreen timeout 5 ./squashfs-root/AppRun || test $? -eq 124
+
+          # The excludelist does not cover these, so appimagetool must have
+          # bundled them; a missing library would only show up on systems
+          # without libsndfile/libebur128 installed.
+          for lib in libsndfile libebur128 libavcodec libavformat; do
+            if ! find squashfs-root/usr/lib -maxdepth 1 -name "${lib}*" | grep -q .; then
+              echo "AppImage is missing bundled ${lib}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: soundchest-linux-x86_64
+          path: SoundChest-*-x86_64.AppImage
+          if-no-files-found: error
