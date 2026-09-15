@@ -13,6 +13,7 @@ jobs:
   package:
     name: DMG
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
@@ -21,11 +22,17 @@ jobs:
           root="${VCPKG_INSTALLATION_ROOT:-/usr/local/share/vcpkg}"
           echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
 
+      - name: Cache vcpkg packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.VCPKG_ROOT }}/installed
+          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_TRIPLET }}-sndfile-v1
+
       - name: Install dependencies
         env:
           VCPKG_OSX_DEPLOYMENT_TARGET: ${{ env.MACOSX_DEPLOYMENT_TARGET }}
         run: |
-          "$VCPKG_ROOT/vcpkg" install libsndfile libebur128 \
+          "$VCPKG_ROOT/vcpkg" install libsndfile \
             --triplet "$VCPKG_TRIPLET" --clean-after-build
 
       - name: Install Qt
@@ -42,12 +49,35 @@ jobs:
           qt-prefix: ${{ env.QT_ROOT_DIR }}
           prefix: ${{ github.workspace }}/qlementine-install
 
+      # libebur128 comes from source: the vcpkg port's headers were not
+      # showing up in CMake's search paths, and a static build needs no
+      # bundling step.
+      - name: Build libebur128
+        uses: ./.github/actions/ebur128
+        with:
+          prefix: ${{ github.workspace }}/ebur128-install
+          deployment-target: ${{ env.MACOSX_DEPLOYMENT_TARGET }}
+
+      - name: Verify dependencies
+        run: |
+          for file in \
+            "$VCPKG_ROOT/installed/$VCPKG_TRIPLET/include/sndfile.h" \
+            "${{ github.workspace }}/ebur128-install/include/ebur128.h"; do
+            if [ ! -e "$file" ]; then
+              find "$VCPKG_ROOT/installed" -maxdepth 3
+              echo "missing dependency file: $file" >&2
+              exit 1
+            fi
+          done
+          ls "${{ github.workspace }}"/ebur128-install/lib*/libebur128.a >/dev/null
+          ls "$VCPKG_ROOT/installed/$VCPKG_TRIPLET/lib/"libsndfile* >/dev/null
+
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" \
-            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR;${{ github.workspace }}/qlementine-install" \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR;$VCPKG_ROOT/installed/$VCPKG_TRIPLET;${{ github.workspace }}/qlementine-install;${{ github.workspace }}/ebur128-install" \
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
             -DVCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET"
 
@@ -62,19 +92,26 @@ jobs:
           brew install dylibbundler
           mv build/soundchest.app "build/Sound Chest.app"
           # dylibbundler handles the plain dylibs from vcpkg (libsndfile and
-          # its codec dependencies); macdeployqt handles Qt and its FFmpeg
-          # libraries. Without -f, dylibbundler leaves Qt frameworks alone.
+          # its codec dependencies). -s resolves the @rpath references and
+          # </dev/null keeps it from prompting interactively. Without -f it
+          # leaves Qt frameworks alone; macdeployqt handles those next.
           dylibbundler -od -b \
+            -s "$VCPKG_ROOT/installed/$VCPKG_TRIPLET/lib" \
             -x "build/Sound Chest.app/Contents/MacOS/soundchest" \
             -d "build/Sound Chest.app/Contents/Frameworks" \
-            -p @executable_path/../Frameworks
+            -p @executable_path/../Frameworks </dev/null
           macdeployqt "build/Sound Chest.app" -always-overwrite -no-translations
 
-          if otool -L "build/Sound Chest.app/Contents/MacOS/soundchest" | grep -Eq '/(opt/homebrew|usr/local|Users/runner)/'; then
-            echo "unbundled library references remain:" >&2
-            otool -L "build/Sound Chest.app/Contents/MacOS/soundchest" | grep -E '/(opt/homebrew|usr/local|Users/runner)/' >&2
-            exit 1
-          fi
+          fail=0
+          while IFS= read -r -d '' binary; do
+            file -b "$binary" | grep -q 'Mach-O' || continue
+            if otool -L "$binary" | grep -Eq '/(opt/homebrew|usr/local|Users/runner)/'; then
+              echo "unbundled references in $binary:" >&2
+              otool -L "$binary" | grep -E '/(opt/homebrew|usr/local|Users/runner)/' >&2
+              fail=1
+            fi
+          done < <(find "build/Sound Chest.app/Contents" -type f)
+          [ "$fail" -eq 0 ]
           ls "build/Sound Chest.app/Contents/Frameworks" | grep -qi sndfile
 
           codesign --force --deep --sign - "build/Sound Chest.app"

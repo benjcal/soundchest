@@ -1,0 +1,59 @@
+name: Build libebur128
+description: Builds libebur128 from source as a static library and installs it into a prefix.
+
+inputs:
+  version:
+    description: libebur128 git tag (e.g. v1.2.6)
+    default: v1.2.6
+    required: false
+  prefix:
+    description: install prefix for libebur128
+    required: true
+  deployment-target:
+    description: macOS deployment target (ignored elsewhere)
+    default: ""
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Build libebur128 (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        version="${{ inputs.version }}"
+        deployment="${{ inputs.deployment-target }}"
+        curl -L "https://github.com/jiixyj/libebur128/archive/refs/tags/${version}.tar.gz" -o ebur128.tar.gz
+        tar xf ebur128.tar.gz
+        deployment_arg=""
+        if [ -n "$deployment" ]; then
+          deployment_arg="-DCMAKE_OSX_DEPLOYMENT_TARGET=$deployment"
+        fi
+        cmake -S "libebur128-${version#v}" -B ebur128-build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DENABLE_INTERNAL_QUEUE_H=ON \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+          $deployment_arg \
+          -DCMAKE_INSTALL_PREFIX="${{ inputs.prefix }}"
+        cmake --build ebur128-build
+        cmake --install ebur128-build
+
+    - name: Build libebur128 (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
+        $version = "${{ inputs.version }}".TrimStart('v')
+        Invoke-WebRequest -Uri "https://github.com/jiixyj/libebur128/archive/refs/tags/${{ inputs.version }}.tar.gz" -OutFile ebur128.tar.gz
+        tar xf ebur128.tar.gz
+        cmake -S "libebur128-$version" -B ebur128-build -G Ninja `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DBUILD_SHARED_LIBS=OFF `
+          -DENABLE_INTERNAL_QUEUE_H=ON `
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 `
+          -DCMAKE_INSTALL_PREFIX="${{ inputs.prefix }}"
+        cmake --build ebur128-build
+        cmake --install ebur128-build
