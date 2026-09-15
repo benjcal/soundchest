@@ -24,6 +24,7 @@ jobs:
 
       - name: Cache vcpkg packages
         uses: actions/cache@v6
+        continue-on-error: true
         with:
           path: ${{ env.VCPKG_ROOT }}/installed
           key: vcpkg-${{ runner.os }}-${{ env.VCPKG_TRIPLET }}-sndfile-v1
@@ -32,6 +33,7 @@ jobs:
         env:
           VCPKG_OSX_DEPLOYMENT_TARGET: ${{ env.MACOSX_DEPLOYMENT_TARGET }}
         run: |
+          "$VCPKG_ROOT/vcpkg" version
           "$VCPKG_ROOT/vcpkg" install libsndfile \
             --triplet "$VCPKG_TRIPLET" --clean-after-build
 

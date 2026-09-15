@@ -25,15 +25,22 @@ jobs:
 
       - name: Cache vcpkg packages
         uses: actions/cache@v6
+        continue-on-error: true
         with:
           path: ${{ env.VCPKG_ROOT }}/installed
           key: vcpkg-${{ runner.os }}-${{ env.VCPKG_TRIPLET }}-sndfile-v1
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Install dependencies
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
+          & "$env:VCPKG_ROOT\vcpkg.exe" version
           & "$env:VCPKG_ROOT\vcpkg.exe" install libsndfile `
             --triplet "$env:VCPKG_TRIPLET" --clean-after-build
           if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed with $LASTEXITCODE" }
@@ -45,11 +52,6 @@ jobs:
           arch: win64_msvc2022_64
           modules: qtmultimedia
           cache: true
-
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
 
       - name: Build qlementine
         uses: ./.github/actions/qlementine
@@ -108,6 +110,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
+          $env:PATH = "$env:VCPKG_ROOT\installed\$env:VCPKG_TRIPLET\bin;$env:PATH"
           ctest --test-dir build --output-on-failure
 
       - name: Stage
